@@ -27,7 +27,7 @@ Y = rnorm(n) + Z * rnorm(n, mean = 0, sd = 5)
 #### choose the test statistic
 method.list = list( name = "Stephenson", s = 10 )
 
-#### test the null hypothesis that the 0.95 quantile of individual effect is less than or equal to 0
+#### test the null hypothesis that the 95\% quantile of individual effect is less than or equal to 0
 pval = pval_quantile(Z, Y, k = ceiling(n*0.95), c = 0, alternative = "greater", method.list = method.list, nperm = 10^5 )
 
 pval
