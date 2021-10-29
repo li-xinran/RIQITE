@@ -21,6 +21,14 @@ dat$gain
 qplot( dat$gain )
 
 
+# Classic OLS: What can we say about the average effect?
+mod = lm( gain ~ 0 + TxAny + as.factor(Site), data=dat )
+summary( mod )
+confint( mod )
+confint( mod, level = 0.90 )
+
+
+
 #### choose the test statistic
 method.list = list( name = "Stephenson", s = 10 )
 
@@ -58,7 +66,11 @@ ci2
 # NOTE: We are not following the randomization within site in the above.
 
 
+##### Old code analysis ######
+
 # Here we randomize within site using the old code.
+#
+# This code takes into account the blocking structure of the RCT.
 
 dat = mutate( dat,
               TxAny.f = factor( TxAny, levels=c(1,0), labels=c("Tx","Co") ),

@@ -33,6 +33,8 @@ do we flip the sign of the outcomes).}
 
 \item{subset_size}{Look at all subsets of this size and score 1 if treatment
 group has largest value.}
+
+\item{...}{Extra arguments to pass to the coin's \code{independence_test()} method.}
 }
 \value{
 The result of coin's \code{independence_test()}
