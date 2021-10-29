@@ -18,7 +18,26 @@ dat = mutate( dat,
 dat = filter( dat, !is.na( gain ) & Site != "S1" )
 nrow( dat )
 dat$gain
-qplot( dat$gain )
+
+set.seed( 1010101 )
+dat = sample_n( dat, nrow(dat) )
+
+# The gain (post score - pre score) for all teachers in percentage point correct
+# on the test of electric circuit knowledge (we call this "content knowledge").
+
+# For more on the data see
+#
+# Heller, J. I., Shinohara, M., Miratrix, L., Hesketh, S. R., & Daehler, K. R.
+# (2010). Learning Science for Teaching: Effects of Professional Development on
+# Elementary Teachers, Classrooms, and Students. Society for Research on
+# Educational Effectiveness.
+#
+# https://files.eric.ed.gov/fulltext/ED514193.pdf
+
+ggplot( dat, aes( gain ) ) +
+  facet_wrap( ~ Tx ) +
+  geom_histogram() +
+  geom_vline( xintercept = 0, col="red" )
 
 
 # Classic OLS: What can we say about the average effect?
@@ -34,10 +53,15 @@ method.list = list( name = "Stephenson", s = 10 )
 
 n = nrow( dat )
 n
+n * 0.95
 
-#### test the null hypothesis that the 95\% quantile of individual effect is less than or equal to 0
+# ## test the null hypothesis that the 70\% quantile of individual effect is
+# less than or equal to 0
+#
+# Note: If k = n, then you are testing the max effect (sharp null) --- like the
+# original paper of Alan, Devin and Luke.
 pval = pval_quantile( Z = dat$TxAny, Y = dat$gain,
-                      k = ceiling(n*0.95),
+                      k = ceiling(n*0.70),
                       c = 0, alternative = "greater",
                       method.list = method.list, nperm = 10^5 )
 pval
@@ -45,12 +69,14 @@ pval
 
 #### construct simultaneous confidence intervals for all quantiles of individual effects
 ci = ci_quantile( Z = dat$TxAny, Y = dat$gain,
-                  alternative = "two.sided", method.list = method.list, nperm = 10^5,
+                  alternative = "greater", method.list = method.list, nperm = 10^5,
                   alpha = 0.10 )
 ci$n = 1:nrow(ci)
 ci = mutate( ci, per = (n+0.5) / (nrow(ci)+1) )
 filter( ci, sign(lower) == sign(upper) )
 
+
+plot( ci$lower )
 
 # Quantile effects of different levels of effect.  E.g., the 65% is bounded
 # below by 0.  The 84% is an impact of 10 or above.
@@ -70,7 +96,7 @@ ci2
 # Try smaller set size.
 method.list2 = list( name = "Stephenson", s = 5 )
 ci.s5 = ci_quantile( Z = dat$TxAny, Y = dat$gain,
-                  alternative = "two.sided", method.list = method.list2, nperm = 10^5,
+                  alternative = "greater", method.list = method.list2, nperm = 10^5,
                   alpha = 0.10 )
 ci.s5$n = 1:nrow(ci.s5)
 ci.s5 = mutate( ci.s5, per = (n+0.5) / (nrow(ci)+1) )
@@ -82,7 +108,7 @@ ci2.s5 = ci.s5 %>%
   slice_head( n=1 ) %>%
   relocate( n, per, lower )
 ci2.s5
-
+ci2
 
 
 

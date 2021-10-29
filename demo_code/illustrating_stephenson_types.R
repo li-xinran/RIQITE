@@ -15,7 +15,8 @@ library( xtable )
 
 #####  Make the Data #####
 
-dat = make_fake_data("D")
+SCENARIO = "D"
+dat = make_fake_data(scenario = SCENARIO)
 
 # dat$Yobs = dat$Yobs * -1
 
