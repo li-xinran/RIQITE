@@ -22,6 +22,9 @@ dat$gain
 set.seed( 1010101 )
 dat = sample_n( dat, nrow(dat) )
 
+# Three testing occasions: Baseline (before Tx), Post treatment, and then long
+# term follow up.  (1, 2, and 3 in the data).
+
 # The gain (post score - pre score) for all teachers in percentage point correct
 # on the test of electric circuit knowledge (we call this "content knowledge").
 
