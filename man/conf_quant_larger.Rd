@@ -20,27 +20,7 @@ conf_quant_larger(
 \item{Z}{treatment assignment (vector)}
 
 \item{Y}{outcome (vector)}
-
-\item{method.list}{choice of rank score stat, Default: NULL}
-
-\item{score}{PARAM_DESCRIPTION, Default: NULL}
-
-\item{stat.null}{PARAM_DESCRIPTION, Default: NULL}
-
-\item{nperm}{PARAM_DESCRIPTION, Default: 10^5}
-
-\item{alpha}{significance level, Default: 0.05}
-
-\item{tol}{PARAM_DESCRIPTION, Default: 10^(-3)}
-
-\item{ind.sort.treat}{PARAM_DESCRIPTION, Default: NULL}
-}
-\value{
-OUTPUT_DESCRIPTION
 }
 \description{
 generate one-sided confidence intervals
-}
-\details{
-DETAILS
 }

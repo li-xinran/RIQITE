@@ -66,6 +66,28 @@ ci2
 # NOTE: We are not following the randomization within site in the above.
 
 
+
+# Try smaller set size.
+method.list2 = list( name = "Stephenson", s = 5 )
+ci.s5 = ci_quantile( Z = dat$TxAny, Y = dat$gain,
+                  alternative = "two.sided", method.list = method.list2, nperm = 10^5,
+                  alpha = 0.10 )
+ci.s5$n = 1:nrow(ci.s5)
+ci.s5 = mutate( ci.s5, per = (n+0.5) / (nrow(ci)+1) )
+ci2.s5 = ci.s5 %>%
+  filter( lower > 0 ) %>%
+  mutate( lower = round( lower, digits=1 ) ) %>%
+  group_by( lower ) %>%
+  arrange( n ) %>%
+  slice_head( n=1 ) %>%
+  relocate( n, per, lower )
+ci2.s5
+
+
+
+
+
+
 ##### Old code analysis ######
 
 # Here we randomize within site using the old code.

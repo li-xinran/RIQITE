@@ -2,7 +2,6 @@
 
 S3method(print,permconfint)
 export(ci_quantile)
-export(conf_quant_larger)
 export(find_ci)
 export(find_ci_stephenson)
 export(generate_four_stephenson_cis)

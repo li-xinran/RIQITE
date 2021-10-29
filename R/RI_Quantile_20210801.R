@@ -2,7 +2,10 @@
 ####### basics for testing quantiles of indivial effects ##########
 ###################################################################
 
-### score fun of the ranks ###
+#' score function of the ranks
+#'
+#' Calculate the scores of n units (ordered from low to high score) given a
+#' specified test statistic, not allowing for ties.
 rank_score <- function( n, method.list = list(name = "Wilcoxon") ){
 
   if(method.list$name == "Wilcoxon"){
@@ -18,6 +21,12 @@ rank_score <- function( n, method.list = list(name = "Wilcoxon") ){
 }
 
 
+#' Generate matrix of complete randomization assignments
+#'
+#' @param n Sample size
+#' @param m Number units treated
+#' @param nperm number of permutations.  Inf will generate all possible
+#'   permutations.
 assign_CRE <- function(n, m, nperm){
   if(is.finite(nperm)){
     Z.perm = matrix(0, nrow = n, ncol = nperm)
@@ -40,6 +49,18 @@ assign_CRE <- function(n, m, nperm){
 
 
 #' @title rand dist of the rank score stat
+#'
+#'   Generate the null distribution of the given test statistic for an
+#'   experiment with m treated out of n units.
+#'
+#' @param Z.perm Matrix of possible treatment assignments.  NULL will generate
+#'   complete rand with nperm combinations.
+#'
+#' @param score The list of possible scores of the units (under a null,
+#'   invariant under treatment assignment).  If null will generate from the
+#'   passed method.list and given n, m.
+#'
+#'
 null_dist <- function(n, m, method.list = NULL, score = NULL, nperm = 10^5, Z.perm = NULL){
   if(is.null(score)){
     score = rank_score( n, method.list )
@@ -47,6 +68,8 @@ null_dist <- function(n, m, method.list = NULL, score = NULL, nperm = 10^5, Z.pe
 
   if(is.null(Z.perm)){
     Z.perm = assign_CRE(n, m, nperm)
+  } else {
+    stopifnot( is.matrix(Z.perm) )
   }
 
   stat_null = rep(NA, ncol(Z.perm))
@@ -57,6 +80,9 @@ null_dist <- function(n, m, method.list = NULL, score = NULL, nperm = 10^5, Z.pe
   return(stat_null)
 }
 
+
+
+
 #' @title sort the treated units using the "first" method
 sort_treat <- function(Y, Z){
   r = rank(Y, ties.method = "first")
@@ -64,6 +90,8 @@ sort_treat <- function(Y, Z){
   ind.sort.treat = ind.sort[Z[ind.sort] == 1]
   return(ind.sort.treat)
 }
+
+
 
 #' @title minimum stat value in H_{k,c}
 min_stat <- function(Z, Y, k, c, method.list = NULL, score = NULL, ind.sort.treat = NULL){
@@ -89,6 +117,8 @@ min_stat <- function(Z, Y, k, c, method.list = NULL, score = NULL, ind.sort.trea
 
   return(stat.min)
 }
+
+
 
 ### p-val for testing tau_{(k)} <= c ###
 pval_H_k_c <- function(Z, Y, k, c, method.list = NULL, score = NULL, stat.null = NULL, nperm = 10^5, ind.sort.treat = NULL){
@@ -121,18 +151,6 @@ pval_H_k_c <- function(Z, Y, k, c, method.list = NULL, score = NULL, stat.null =
 #'
 #' @param Z treatment assignment (vector)
 #' @param Y outcome (vector)
-#' @param method.list choice of rank score stat, Default: NULL
-#' @param score PARAM_DESCRIPTION, Default: NULL
-#' @param stat.null PARAM_DESCRIPTION, Default: NULL
-#' @param nperm PARAM_DESCRIPTION, Default: 10^5
-#' @param alpha significance level, Default: 0.05
-#' @param tol PARAM_DESCRIPTION, Default: 10^(-3)
-#' @param ind.sort.treat PARAM_DESCRIPTION, Default: NULL
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#'
-#' @rdname conf_quant_larger
-#' @export
 conf_quant_larger <- function( Z, Y, method.list = NULL, score = NULL, stat.null = NULL, nperm = 10^5,
                                alpha = 0.05, tol = 10^(-3), ind.sort.treat = NULL ){
   n = length(Z)
@@ -216,7 +234,7 @@ conf_quant_larger <- function( Z, Y, method.list = NULL, score = NULL, stat.null
 }
 
 ###################################################################
-######  functions for testing quantiles of individual effects #######
+#####  functions for testing quantiles of individual effects ######
 ###################################################################
 ### p value for testing tau_{(k)} <= or >= c ###
 
