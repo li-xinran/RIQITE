@@ -228,7 +228,7 @@ conf_quant_larger <- function( Z, Y, method.list = NULL, score = NULL, stat.null
     c.limit[1:(n-m-1)] = c.limit[n-m]
   }
 
-  c.limit[c.limit > (Y1.max - Y0.min)] = Inf
+  c.limit[c.limit > (Y1.max - Y0.min) + tol/2] = Inf
 
   return( c.limit )
 }
