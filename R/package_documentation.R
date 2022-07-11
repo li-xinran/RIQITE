@@ -26,12 +26,14 @@
 # Code to clean and write original csv file.
 if ( FALSE ) {
     library( tidyverse )
-    benin <- read.csv("Examples/ExampleData/Benin.csv", stringsAsFactors = FALSE )
+    benin <- read.csv("data/Benin.csv", stringsAsFactors = FALSE )
     benin <- benin %>% rename(VoteShare = vote_pop ) %>%
         mutate( Treatment = factor(Treatment,
                               labels = c("Control", "Clientelist", "Policy")),
            Treatment = reorder(Treatment, -VoteShare))
     head( benin )
 
-    save( benin, file = "perminf/data/benin.RData" )
+    save( benin, file = here::here( "data/benin.RData"  ) )
 }
+
+

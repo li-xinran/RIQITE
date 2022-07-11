@@ -1,11 +1,14 @@
 Package: RIQITE
 Title: Randomization Inference for Quantiles of Individual Treatment Effects
 Version: 1.0
-Authors@R: 
+Authors@R: c( 
     person(given = "Xinran",
            family = "Li",
            role = c("aut", "cre"),
-           email = "xinranli@illinois.edu")
+           email = "xinranli@illinois.edu"),
+    person("Luke", "Miratrix", 
+           email = "luke_miratrix@gse.harvard.edu", role = c("aut"), 
+           comment = c(ORCID = "0000-0002-0078-1906")) )
 Description: The package performs hypothesis testing and constructs confidence intervals for quantiles of individual treatment effects.
 License: `use_mit_license()`
 Encoding: UTF-8

@@ -4,7 +4,7 @@
 ##
 
 library( testthat )
-library( perminf )
+library( RIQITE )
 library( tidyverse )
 
 context("Do things run")
@@ -12,7 +12,7 @@ context("Do things run")
 test_that("we can call functions without crashing", {
 
                                         # data( benin )
-    benin <- perminf::benin
+    benin <- RIQITE::benin
     ## Make district a factor for the permutation inference
     benin$District = factor( benin$District )
 
