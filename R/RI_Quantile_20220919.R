@@ -24,6 +24,8 @@ rank_score <- function( n, method.list = list(name = "Wilcoxon") ){
 
 
 #' Generate matrix of complete randomization assignments
+#' 
+#' Draw multiple assignments from a completely randomized experiment
 #'
 #' @param n Sample size
 #' @param m Number units treated
