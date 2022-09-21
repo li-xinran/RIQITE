@@ -29,6 +29,8 @@ rank_score <- function( n, method.list = list(name = "Wilcoxon") ){
 #' @param m Number units treated
 #' @param nperm number of permutations.  Inf will generate all possible
 #'   permutations.
+#'   
+#' @export
 assign_CRE <- function(n, m, nperm){
   if(is.finite(nperm)){
     Z.perm = matrix(0, nrow = n, ncol = nperm)
