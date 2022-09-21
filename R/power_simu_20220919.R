@@ -1,4 +1,10 @@
-
+#' An example function for generating the potential outcomes
+#'
+#' A example function for generating the potential outcomes, which can be used for in the function simu_power for power comparison. 
+#'
+#' @param n A numerical object specifying the sample size.
+#'
+#' @export
 normal_gen_PO <- function(n){
   mu0 = 0; sd0 = 1
   mu1 = 1; sd1 = 1
