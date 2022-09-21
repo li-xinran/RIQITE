@@ -3,6 +3,7 @@
 S3method(print,permconfint)
 export(calc_power)
 export(calc_power_finite)
+export(ci_bound)
 export(ci_quantile)
 export(explore_stephenson_s)
 export(explore_stephenson_s_finite)
