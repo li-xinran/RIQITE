@@ -16,9 +16,17 @@ library(RIQITE)
 ### explanation for the main function
 
 ```
-?ci_quantile
+?pval_bound # get the p value for testing bounded null
 
-?pval_quantile
+?ci_bound # get the confidence interval for the maximum (or minimum) individual effect
+
+?pval_quantile # get the p value for testing null hypotheses on quantiles of individual effects
+
+?ci_quantile # get the confidence interval for quantiles of individual effects
+
+?simu_power # conduct simulation to compare tests using different Stephenson rank sum statistics 
+
+?summary_power # summarize the simulation to compare performance of different Stephenson rank sum statistics 
 ```
 
 

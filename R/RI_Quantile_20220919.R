@@ -388,6 +388,8 @@ pval_quantile <- function(Z, Y, k, c, alternative = "greater",
 #'
 #' @param Z An \eqn{n} dimensional treatment assignment vector.
 #' @param Y An \eqn{n} dimensional observed outcome vector.
+#' @param k.vec A vector that specifies the quantiles of individual effects under investigation. 
+#' If it equals NULL, then we consider all quantiles of individual effects.
 #' @param alternative A character takes value "greater", "less" and "two.sided",
 #'   indicating whether the confidence intervals are one-sided with lower or
 #'   upper confidence limits or two-sided.
