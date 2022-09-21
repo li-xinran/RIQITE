@@ -172,17 +172,17 @@ pval_bound <- function(Z, Y, c=0, method.list = list(name = "DIM"), alternative 
 #'   confidence intervals. For example, if tol = 10^(-3), then the confidence
 #'   limits are precise up to 3 digits.
 #' @return The p-value for testing the specified null hypothesis of interest.
-#' @export
-ci_bound <- function(Z, Y, alternative = "greater", method.list = list(name = "DIM"),  Z.perm = NULL, nperm = 10^3, impute = "control", alpha = 0.05, tol = 10^(-3) ){
-  if(alternative == "greater"){
-    ci.bound = ci_max_effect(Z=Z, Y=Y, method.list=method.list, Z.perm = Z.perm, iter.max = nperm, impute = impute, alpha = alpha, tol = tol )
-    return(ci.bound)
-  }
-  if(alternative == "less"){
-    ci.bound = -1 * ci_max_effect(Z=Z, Y=-1*Y, method.list=method.list, Z.perm = Z.perm, iter.max = nperm, impute = impute, alpha = alpha, tol = tol )
-    return(ci.bound)
-  }
-}
+# @export
+# ci_bound <- function(Z, Y, alternative = "greater", method.list = list(name = "DIM"),  Z.perm = NULL, nperm = 10^3, impute = "control", alpha = 0.05, tol = 10^(-3) ){
+#   if(alternative == "greater"){
+#     ci.bound = ci_max_effect(Z=Z, Y=Y, method.list=method.list, Z.perm = Z.perm, iter.max = nperm, impute = impute, alpha = alpha, tol = tol )
+#     return(ci.bound)
+#   }
+#   if(alternative == "less"){
+#     ci.bound = -1 * ci_max_effect(Z=Z, Y=-1*Y, method.list=method.list, Z.perm = Z.perm, iter.max = nperm, impute = impute, alpha = alpha, tol = tol )
+#     return(ci.bound)
+#   }
+# }
 
 
 

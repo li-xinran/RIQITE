@@ -50,7 +50,7 @@ assign_CRE <- function(n, m, nperm){
 }
 
 
-#' @title rand dist of the rank score stat
+#' rand dist of the rank score stat
 #'
 #'   Generate the null distribution of the given test statistic for an
 #'   experiment with m treated out of n units.
