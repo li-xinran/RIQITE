@@ -15,5 +15,5 @@ assign_CRE(n, m, nperm)
 permutations.}
 }
 \description{
-Generate matrix of complete randomization assignments
+Draw multiple assignments from a completely randomized experiment
 }
