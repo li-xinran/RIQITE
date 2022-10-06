@@ -102,7 +102,7 @@ s_selector <- s_selector %>%
 s_selector
 
 ggplot( s_selector, aes( s_adj, power, col=tx_dist ) ) +
-  facet_grid( percentile ~ TxVar ) +
+  facet_grid( percentile ~ TxVar, labeller = label_both ) +
   geom_hline(yintercept = 0.80, lty = 2 ) +
   geom_point() +
   geom_errorbar( aes( ymax = power + 2*SEpower,
