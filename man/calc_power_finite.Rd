@@ -44,7 +44,7 @@ sum statistic with parameter s=10.}
 randomization distribution of the rank sum statistic.}
 
 \item{nperm}{A positive integer representing the number of permutations for
-approximating the randomization distribution of the rank sum statistic}
+approximating the randomization distribution of the rank sum statistic.}
 }
 \value{
 Small tibble with statistics of the power calculation (true

@@ -10,11 +10,13 @@ rank_score <- function( n, method.list = list(name = "Wilcoxon") ){
 
   if(method.list$name == "Wilcoxon"){
     score = c(1:n)
+    score = score/max(score)
     return(score)
   }
 
   if(method.list$name == "Stephenson"){
     score = choose( c(1:n) - 1, method.list$s - 1 )
+    score = score/max(score)
     return(score)
   }
 
@@ -22,11 +24,15 @@ rank_score <- function( n, method.list = list(name = "Wilcoxon") ){
 
 
 #' Generate matrix of complete randomization assignments
+#' 
+#' Draw multiple assignments from a completely randomized experiment
 #'
 #' @param n Sample size
 #' @param m Number units treated
 #' @param nperm number of permutations.  Inf will generate all possible
 #'   permutations.
+#'   
+#' @export
 assign_CRE <- function(n, m, nperm){
   if(is.finite(nperm)){
     Z.perm = matrix(0, nrow = n, ncol = nperm)
@@ -48,7 +54,7 @@ assign_CRE <- function(n, m, nperm){
 }
 
 
-#' @title rand dist of the rank score stat
+#' rand dist of the rank score stat
 #'
 #'   Generate the null distribution of the given test statistic for an
 #'   experiment with m treated out of n units.
@@ -121,7 +127,7 @@ min_stat <- function(Z, Y, k, c, method.list = NULL, score = NULL, ind.sort.trea
 
 
 ### p-val for testing tau_{(k)} <= c ###
-pval_H_k_c <- function(Z, Y, k, c, method.list = NULL, score = NULL, stat.null = NULL, nperm = 10^5, ind.sort.treat = NULL){
+pval_H_k_c <- function(Z, Y, k, c, method.list = NULL, score = NULL, stat.null = NULL, nperm = 10^5, Z.perm = NULL, ind.sort.treat = NULL){
   n = length(Z)
   m = sum(Z)
 
@@ -132,7 +138,7 @@ pval_H_k_c <- function(Z, Y, k, c, method.list = NULL, score = NULL, stat.null =
 
   # emp null dist #
   if(is.null(stat.null)){
-    stat.null = null_dist(n, m, score = score, nperm = nperm)
+    stat.null = null_dist(n, m, score = score, nperm = nperm, Z.perm = Z.perm)
   }
 
   # min stat value under H_{k,c} #
@@ -151,8 +157,8 @@ pval_H_k_c <- function(Z, Y, k, c, method.list = NULL, score = NULL, stat.null =
 #'
 #' @param Z treatment assignment (vector)
 #' @param Y outcome (vector)
-conf_quant_larger <- function( Z, Y, method.list = NULL, score = NULL, stat.null = NULL, nperm = 10^5,
-                               alpha = 0.05, tol = 10^(-3), ind.sort.treat = NULL ){
+conf_quant_larger <- function( Z, Y, k.vec = NULL, method.list = NULL, score = NULL, stat.null = NULL, nperm = 10^5,
+                               Z.perm = NULL, alpha = 0.05, tol = 10^(-3), ind.sort.treat = NULL ){
   n = length(Z)
   m = sum(Z)
 
@@ -163,7 +169,8 @@ conf_quant_larger <- function( Z, Y, method.list = NULL, score = NULL, stat.null
 
   # emp null dist #
   if(is.null(stat.null)){
-    stat.null = null_dist(n, m, score = score, nperm = nperm)
+    stat.null = null_dist(n, m, score = score, nperm = nperm, Z.perm = Z.perm)
+    nperm = length(stat.null)
   }else{
     nperm = length(stat.null)
   }
@@ -180,56 +187,113 @@ conf_quant_larger <- function( Z, Y, method.list = NULL, score = NULL, stat.null
   c.max = Y1.max - Y0.min + tol
   c.min = Y1.min - Y0.max - tol
 
-  # conf interval for all quantiles tau_{(k)} #
-  c.limit = rep(NA, n)
+  
 
   # sort the treated units
   if(is.null(ind.sort.treat)){
     ind.sort.treat = sort_treat(Y, Z)
   }
-
-  for(k in n:(n-m)){
-    # define the target fun #
-    # f > 0 <==> p-value <= alpha
-    # f decreases in c, p value increases in c
-    if(k < n){
-      c.max = c.limit[k+1]
-    }
-    f <- function(c){
-      stat.min = min_stat(Z, Y, k, c, score = score, ind.sort.treat)
-      return(stat.min - thres)
-    }
-    # check whether f(-Inf) = f(c.min) > 0 #
-    if( f(c.min) <= 0 ){
-      c.sol = -Inf
-    }
-    if( f(c.max) > 0){
-      c.sol = c.max
-    }
-    if( f(c.min) > 0 & f(c.max) <= 0 ){
-      c.sol = uniroot(f, interval = c(c.min, c.max), extendInt = "downX", tol = tol)$root
-      # find the min c st p-value > alpha <==> f <= 0 #
-      c.sol = round(c.sol, digits = -log10(tol))
-      if( f(c.sol) <= 0 ){
-        while( f(c.sol) <= 0 ){
-          c.sol = c.sol - tol
-        }
-        c.sol = c.sol + tol
-      }else{
-        while(f(c.sol) > 0 ){
+  
+  if( is.null(k.vec) ){
+    
+    # conf interval for all quantiles tau_{(k)} #
+    c.limit = rep(NA, n)
+    
+    for(k in n:(n-m)){
+      # define the target fun #
+      # f > 0 <==> p-value <= alpha
+      # f decreases in c, p value increases in c
+      if(k < n){
+        c.max = c.limit[k+1]
+      }
+      f <- function(c){
+        stat.min = min_stat(Z, Y, k, c, score = score, ind.sort.treat)
+        return(stat.min - thres)
+      }
+      # check whether f(-Inf) = f(c.min) > 0 #
+      if( f(c.min) <= 0 ){
+        c.sol = -Inf
+      }
+      if( f(c.max) > 0){
+        c.sol = c.max
+      }
+      if( f(c.min) > 0 & f(c.max) <= 0 ){
+        c.sol = uniroot(f, interval = c(c.min, c.max), extendInt = "downX", tol = tol)$root
+        # find the min c st p-value > alpha <==> f <= 0 #
+        c.sol = round(c.sol, digits = -log10(tol))
+        if( f(c.sol) <= 0 ){
+          while( f(c.sol) <= 0 ){
+            c.sol = c.sol - tol
+          }
           c.sol = c.sol + tol
+        }else{
+          while(f(c.sol) > 0 ){
+            c.sol = c.sol + tol
+          }
         }
       }
+      c.limit[k] = c.sol
     }
-    c.limit[k] = c.sol
+    
+    if( n-m > 1){
+      c.limit[1:(n-m-1)] = c.limit[n-m]
+    }
+    
+    c.limit[c.limit > (Y1.max - Y0.min) + tol/2] = Inf
+  }else{
+    
+    k.vec.sort = sort(k.vec, decreasing = FALSE)
+    j.max = length(k.vec.sort)
+    j.min = max( sum(k.vec <= (n-m)), 1) 
+    
+    # conf interval for tau_{(k)} with k in k.vec#
+    c.limit = rep(NA, j.max)
+    
+    for(j in j.max:j.min){
+      # define the target fun #
+      # f > 0 <==> p-value <= alpha
+      # f decreases in c, p value increases in c
+      k = k.vec.sort[j]
+      if(j < j.max){
+        c.max = c.limit[j+1]
+      }
+      f <- function(c){
+        stat.min = min_stat(Z, Y, k, c, score = score, ind.sort.treat)
+        return(stat.min - thres)
+      }
+      # check whether f(-Inf) = f(c.min) > 0 #
+      if( f(c.min) <= 0 ){
+        c.sol = -Inf
+      }
+      if( f(c.max) > 0){
+        c.sol = c.max
+      }
+      if( f(c.min) > 0 & f(c.max) <= 0 ){
+        c.sol = uniroot(f, interval = c(c.min, c.max), extendInt = "downX", tol = tol)$root
+        # find the min c st p-value > alpha <==> f <= 0 #
+        c.sol = round(c.sol, digits = -log10(tol))
+        if( f(c.sol) <= 0 ){
+          while( f(c.sol) <= 0 ){
+            c.sol = c.sol - tol
+          }
+          c.sol = c.sol + tol
+        }else{
+          while(f(c.sol) > 0 ){
+            c.sol = c.sol + tol
+          }
+        }
+      }
+      c.limit[j] = c.sol
+    }
+    
+    
+    if(j.min > 1){
+      c.limit[1:(j.min-1)] = c.limit[j.min]
+    }
+    
+    c.limit[c.limit > (Y1.max - Y0.min) + tol/2] = Inf
   }
-
-  if( n-m > 1){
-    c.limit[1:(n-m-1)] = c.limit[n-m]
-  }
-
-  c.limit[c.limit > (Y1.max - Y0.min) + tol/2] = Inf
-
+  
   return( c.limit )
 }
 
@@ -261,7 +325,8 @@ conf_quant_larger <- function( Z, Y, method.list = NULL, score = NULL, stat.null
 #' @param stat.null An vector whose empirical distribution approximates the
 #'   randomization distribution of the rank sum statistic.
 #' @param nperm A positive integer representing the number of permutations for
-#'   approximating the randomization distribution of the rank sum statistic
+#'   approximating the randomization distribution of the rank sum statistic.
+#' @param Z.perm A \eqn{n \times nperm} matrix that specifies the permutated assignments for approximating the null distribution of the test statistic.
 #' @param switch A logical object indicating whether performing treatment label
 #'   switching to make the treated group have larger size.
 #'
@@ -269,14 +334,15 @@ conf_quant_larger <- function( Z, Y, method.list = NULL, score = NULL, stat.null
 #' @export
 pval_quantile <- function(Z, Y, k, c, alternative = "greater",
                           method.list = list( name = "Stephenson", s = 10 ),
-                          score = NULL, stat.null = NULL, nperm = 10^6, switch = TRUE ){
+                          score = NULL, stat.null = NULL, nperm = 10^6, Z.perm = NULL, 
+                          switch = TRUE ){
 
   # Check inputs
   if ( is.null( Y ) || !is.numeric( Y ) ) {
     stop( "Need to pass Y as numeric value for outcome" )
   }
   if ( !(length(unique(Z)) == 2 &&
-               sort( unique( Z ) ) == c(0,1) ) ) {
+               all( sort( unique( Z ) ) == c(0,1) ) ) ) {
     stop( "Need to pass Z as vector of 0/1 values for control/treatment assignment" )
   }
   stopifnot( length(Y) == length(Z) )
@@ -297,21 +363,21 @@ pval_quantile <- function(Z, Y, k, c, alternative = "greater",
 
   if(alternative == "greater"){
     pval = pval_H_k_c(Z = Z, Y = Y, k = k, c = c, method.list = method.list, score = score,
-                      stat.null = stat.null, nperm = nperm)
+                      stat.null = stat.null, nperm = nperm, Z.perm = Z.perm)
     return(pval)
   }
 
   if(alternative == "less"){
     pval = pval_H_k_c(Z = Z, Y = -1 * Y, k = n+1-k, c = -1 * c, method.list = method.list, score = score,
-                      stat.null = stat.null, nperm = nperm)
+                      stat.null = stat.null, nperm = nperm, Z.perm = Z.perm)
     return(pval)
   }
 
   if(alternative == "two.sided"){
     pval.greater = pval_H_k_c(Z = Z, Y = Y, k = k, c = c, method.list = method.list, score = score,
-                              stat.null = stat.null, nperm = nperm)
+                              stat.null = stat.null, nperm = nperm, Z.perm = Z.perm)
     pval.less = pval_H_k_c(Z = Z, Y = -1 * Y, k = n+1-k, c = -1 * c, method.list = method.list, score = score,
-                           stat.null = stat.null, nperm = nperm)
+                           stat.null = stat.null, nperm = nperm, Z.perm = Z.perm)
     pval = 2 * min(pval.greater, pval.less)
     return(pval)
   }
@@ -326,6 +392,8 @@ pval_quantile <- function(Z, Y, k, c, alternative = "greater",
 #'
 #' @param Z An \eqn{n} dimensional treatment assignment vector.
 #' @param Y An \eqn{n} dimensional observed outcome vector.
+#' @param k.vec A vector that specifies the quantiles of individual effects under investigation. 
+#' If it equals NULL, then we consider all quantiles of individual effects.
 #' @param alternative A character takes value "greater", "less" and "two.sided",
 #'   indicating whether the confidence intervals are one-sided with lower or
 #'   upper confidence limits or two-sided.
@@ -338,7 +406,8 @@ pval_quantile <- function(Z, Y, k, c, alternative = "greater",
 #' @param stat.null An vector whose empirical distribution approximates the
 #'   randomization distribution of the rank sum statistic.
 #' @param nperm A positive integer representing the number of permutations for
-#'   approximating the randomization distribution of the rank sum statistic
+#'   approximating the randomization distribution of the rank sum statistic.
+#' @param Z.perm A \eqn{n \times nperm} matrix that specifies the permutated assignments for approximating the null distribution of the test statistic.
 #' @param alpha A numerical object, where 1-alpha indicates the confidence
 #'   level.
 #' @param tol A numerical object specifying the precision of the obtained
@@ -353,15 +422,15 @@ pval_quantile <- function(Z, Y, k, c, alternative = "greater",
 #'   upper confidence limits for individual effects sorted increasingly.}
 #'
 #' @export
-ci_quantile <- function(Z, Y, alternative = "greater", method.list = list( name = "Stephenson", s = 10 ),
-                        score = NULL, stat.null = NULL, nperm = 10^6,  alpha = 0.05,
+ci_quantile <- function(Z, Y, k.vec = NULL, alternative = "greater", method.list = list( name = "Stephenson", s = 10 ),
+                        score = NULL, stat.null = NULL, nperm = 10^6, Z.perm = NULL, alpha = 0.05,
                         tol = 10^(-3), switch = TRUE){
   # Check inputs
   if ( is.null( Y ) || !is.numeric( Y ) ) {
     stop( "Need to pass Y as numeric value for outcome" )
   }
   if ( !(length(unique(Z)) == 2 &&
-         sort( unique( Z ) ) == c(0,1) ) ) {
+         all( sort( unique( Z ) ) == c(0,1) ) ) ) {
     stop( "Need to pass Z as vector of 0/1 values for control/treatment assignment" )
   }
   stopifnot( length(Y) == length(Z) )
@@ -379,33 +448,75 @@ ci_quantile <- function(Z, Y, alternative = "greater", method.list = list( name 
       stat.null = sum(score) - stat.null
     }
   }
-
-  conf.int = data.frame(lower = rep(NA, n), upper = rep(NA, n))
+  
+  
+  
+  if(is.null(k.vec)){
+    conf.int = data.frame(k = c(1:n), lower = rep(NA, n), upper = rep(NA, n))
+  }else{
+    k.vec = sort(k.vec, decreasing = FALSE)
+    conf.int = data.frame(k = k.vec, lower = rep(NA, length(k.vec)), upper = rep(NA, length(k.vec)))
+  }
+  
 
   if( alternative == "greater" ){
-    c.lower = conf_quant_larger(Z = Z, Y = Y, method.list = method.list, score = score,
-                                stat.null = stat.null, nperm = nperm,  alpha = alpha, tol = tol )
+    c.lower = conf_quant_larger(Z = Z, Y = Y, k.vec = k.vec, method.list = method.list, score = score,
+                                stat.null = stat.null, nperm = nperm, Z.perm = Z.perm, alpha = alpha, tol = tol )
     conf.int$upper = Inf
     conf.int$lower = c.lower
     return(conf.int)
   }
 
   if( alternative == "less" ){
-    c.upper = -1 * rev( conf_quant_larger(Z = Z, Y = -1 * Y, method.list = method.list, score = score,
-                                          stat.null = stat.null, nperm = nperm,  alpha = alpha, tol = tol ) )
+    if(is.null(k.vec)){
+      k.vec.rev = NULL
+    }else{
+      k.vec.rev = n+1-k.vec
+    }
+    c.upper = -1 * rev( conf_quant_larger(Z = Z, Y = -1 * Y, k.vec = k.vec.rev, method.list = method.list, score = score,
+                                          stat.null = stat.null, nperm = nperm, Z.perm = Z.perm,  alpha = alpha, tol = tol ) )
     conf.int$upper = c.upper
     conf.int$lower = -Inf
     return(conf.int)
   }
 
   if(alternative == "two.sided"){
-    c.lower = conf_quant_larger(Z = Z, Y = Y, method.list = method.list, score = score,
-                                stat.null = stat.null, nperm = nperm,  alpha = alpha/2, tol = tol )
-    c.upper = -1 * rev( conf_quant_larger(Z = Z, Y = -1 * Y, method.list = method.list, score = score,
-                                          stat.null = stat.null, nperm = nperm,  alpha = alpha/2, tol = tol ) )
+    c.lower = conf_quant_larger(Z = Z, Y = Y, k.vec = k.vec, method.list = method.list, score = score,
+                                stat.null = stat.null, nperm = nperm, Z.perm = Z.perm, alpha = alpha/2, tol = tol )
+    
+    if(is.null(k.vec)){
+      k.vec.rev = NULL
+    }else{
+      k.vec.rev = n+1-k.vec
+    }
+    c.upper = -1 * rev( conf_quant_larger(Z = Z, Y = -1 * Y, k.vec = k.vec.rev, method.list = method.list, score = score,
+                                          stat.null = stat.null, nperm = nperm, Z.perm = Z.perm,  alpha = alpha/2, tol = tol ) )
     conf.int$upper = c.upper
     conf.int$lower = c.lower
     return(conf.int)
   }
 }
 
+
+if( FALSE ){
+  n = 100
+  m = 50
+  Z = sample( c(rep(1, m), rep(0, n-m)) )
+  Y = rnorm(n) + 2 * Z
+  method.list = list( name = "Stephenson", s = 6 )
+  
+  k.vec = c(1:n)
+  alternative = "two.sided"
+  
+  stat.null = null_dist( n, m, method.list = method.list, nperm = 10^3 )
+  
+  a = ci_quantile(Z, Y, alternative = alternative, method.list = method.list,
+                         stat.null = stat.null, alpha = 0.05,
+                          tol = 10^(-3), switch = FALSE)
+  
+  b = ci_quantile(Z, Y, k.vec = k.vec, alternative = alternative, method.list = method.list,
+                  stat.null = stat.null, alpha = 0.05,
+                  tol = 10^(-3), switch = FALSE)
+  
+  cbind(a[k.vec, ], b)
+}

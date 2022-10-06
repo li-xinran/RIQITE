@@ -1,5 +1,5 @@
 
-library( tidyverse )
+#library( tidyverse )
 
 #' Generate a function that makes treatment effects.
 #'
@@ -18,6 +18,7 @@ library( tidyverse )
 #' @param ... Extra parameters to pass to distribution function (e.g.,
 #'   sd for rnorm).
 #' @return A function of the form tx_function( Y0 ).
+#' 
 #' @export
 tx_function_factory <- function( distribution, ATE = 0, tx_scale = 1, ... ) {
   dots = list( ... )
@@ -59,6 +60,8 @@ tx_function_factory <- function( distribution, ATE = 0, tx_scale = 1, ... ) {
 #'   treatment effects.  Default is tx_constant.
 #' @return Tibble (dataframe) with two columns, one of Y0s and one
 #'   (tau) of treatment effects.
+#'   
+#' @import tibble
 #' @export
 generate_finite_data <- function( n,
                                   Y0_distribution = rnorm,
@@ -92,6 +95,8 @@ generate_finite_data <- function( n,
 #'
 #' @return Small tibble with statistics of the power calculation (true
 #'   effect being tested, power to detect, sample size, etc.)
+#'   
+#' @import tibble
 #' @export
 calc_power_finite <- function( Y0, tau, p_tx, R = 100,
                                percentile = 1,
@@ -134,6 +139,7 @@ calc_power_finite <- function( Y0, tau, p_tx, R = 100,
 #' see how power changes as a function of s.
 #'
 #' @param s Numeric list of s values to test using the Stephenson rank.
+#' @import dplyr
 #' @export
 explore_stephenson_s_finite <- function( s = c(2,5,10,30),
                                          Y0, tau, p_tx, R = 100,
@@ -221,6 +227,7 @@ calc_power_ICC <- function( rps, iter_per_set ) {
 #'
 #' @param iter_per_set Number of permutations per finite dataset.
 #' @param calc_ICC Calculate how much
+#' @import tidyverse
 #' @export
 calc_power <- function( n,
                         Y0_distribution = rnorm,
@@ -289,6 +296,10 @@ if ( FALSE ) {
 #' see how power changes as a function of s in that scenario.
 #'
 #' @param s Numeric list of s values to test using the Stephenson rank.
+#' @import tidyverse
+#' @import future
+#' @import parallel
+#' @import furrr
 #' @export
 explore_stephenson_s <- function( s = c(2,5,10,30),
                                   n,
@@ -308,7 +319,7 @@ explore_stephenson_s <- function( s = c(2,5,10,30),
 
 
   one_run <- function( Rint ) {
-    require( tidyverse )
+ #   require( tidyverse )
     dat = generate_finite_data( n = n,
                                 Y0_distribution,
                                 tx_function )
@@ -328,9 +339,9 @@ explore_stephenson_s <- function( s = c(2,5,10,30),
   if ( !parallel ) {
     rps = map( rep( iter_per_set, n_blocks ), one_run )
   } else {
-    require( future )
-    require( parallel )
-    require( furrr )
+ #   require( future )
+#    require( parallel )
+ #   require( furrr )
     future::plan(multisession,
                  workers = parallel::detectCores() - 1 )
     rps = future_map( rep( iter_per_set, n_blocks ),
