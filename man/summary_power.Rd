@@ -6,7 +6,7 @@
 \usage{
 summary_power(
   result,
-  measure = "CI_n(c)",
+  measure = c("CI_n(c)", "test_tau(k)", "CI_tau(k)"),
   alternative = "greater",
   cutoff = 0,
   k = NULL

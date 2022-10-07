@@ -2,7 +2,7 @@
 % Please edit documentation in R/RI_Quantile_20220919.R
 \name{null_dist}
 \alias{null_dist}
-\title{rand dist of the rank score stat}
+\title{Generate randomization dist of the rank score stat}
 \usage{
 null_dist(n, m, method.list = NULL, score = NULL, nperm = 10^5, Z.perm = NULL)
 }

@@ -35,7 +35,7 @@ treatment effects.  Default is tx_constant.}
 
 \item{iter_per_set}{Number of permutations per finite dataset.}
 
-\item{calc_ICC}{Calculate how much}
+\item{calc_ICC}{Calculate how much power varies across finite datasets.}
 }
 \description{
 Given a specified DGP for control outcomes and treatment impacts,

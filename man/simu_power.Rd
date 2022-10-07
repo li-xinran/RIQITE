@@ -48,12 +48,15 @@ switching to make the treated group have larger size.}
 }
 \value{
 A list with the elements
-\item{Steph.s.vec}{An vector specifying the parameters for a sequence of Stephenson rank statistics under investigation.}
+\item{Steph.s.vec}{An vector specifying the parameters for a sequence of Stephenson rank
+statistics under investigation.}
 \item{dat.all}{A list containing all simulated data sets.}
 \item{Z.CRE}{A \eqn{n} by iter.max matrix containing all simulated assignments.}
 \item{method.list.all}{A list describing the Stephenson rank statistics under investigation.}
-\item{ci.upper.all}{A list containing the inferred upper confidence limits for all quantiles of individual effects for all simulated data sets using the specified Stephenson rank statistics.}
-\item{ci.lower.all}{A list containing the inferred lower confidence limits for all quantiles of individual effects for all simulated data sets using the specified Stephenson rank statistics.}
+\item{ci.upper.all}{A list containing the inferred upper confidence limits for all quantiles of
+individual effects for all simulated data sets using the specified Stephenson rank statistics.}
+\item{ci.lower.all}{A list containing the inferred lower confidence limits for all quantiles of
+individual effects for all simulated data sets using the specified Stephenson rank statistics.}
 }
 \description{
 Conduct simulation for inferring quantiles of individual treatment effects using various

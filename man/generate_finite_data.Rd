@@ -27,5 +27,5 @@ Tibble (dataframe) with two columns, one of Y0s and one
 }
 \description{
 Given a desired sample size and a data generating mechanism,
-generate a dataset of Y0s and indiviual treatment effects.
+generate a dataset of Y0s and individual treatment effects.
 }

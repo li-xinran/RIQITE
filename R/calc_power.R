@@ -3,13 +3,19 @@
 
 #' Generate a function that makes treatment effects.
 #'
-#' The function retuned is a function that returns a vector of
+#' The function returned is a function that returns a vector of
 #' treatment impacts to go with passed vector of Y0 values.  I.e.,
 #' final function is of format tx_function( Y0 ).
 #'
+#' For the linear option, the impacts are a linear function of Y0 of
+#' ATE + rho Y0 + epsilon, with epsilon normally distributed with
+#' standard deviation of `tx_scale`.  `rho` needs to be passed as an
+#' extra argument.
+#'
 #' @param distribution A string name of a distribution.  "constant" is
 #'   a constant treatment effect. "scale" is a scaling of Y0.  "rexp"
-#'   and "rnorm" are those random distributions.
+#'   and "rnorm" are those random distributions.  "linear" is a linear
+#'   function; see above.
 #' @param ATE the average treatment effect.  Ignored by "scale"
 #'   option.
 #' @param tx_scale Scaling factor to achieve desired standard
@@ -18,7 +24,7 @@
 #' @param ... Extra parameters to pass to distribution function (e.g.,
 #'   sd for rnorm).
 #' @return A function of the form tx_function( Y0 ).
-#' 
+#'
 #' @export
 tx_function_factory <- function( distribution, ATE = 0, tx_scale = 1, ... ) {
   dots = list( ... )
@@ -38,6 +44,11 @@ tx_function_factory <- function( distribution, ATE = 0, tx_scale = 1, ... ) {
     return( function( Y0 ) {
       tx_scale * (rnorm( length( Y0 ) ) ) + ATE
     } )
+  } else if ( distribution == "linear" ) {
+    stopifnot( !is.null( dots$Y0coef ) )
+    return( function( Y0 ) {
+      ATE + dots$Y0coef * Y0 + tx_scale * rnorm( length( Y0 ) )
+    })
   } else {
     stop( "Unrecognized distribution")
   }
@@ -48,7 +59,7 @@ tx_function_factory <- function( distribution, ATE = 0, tx_scale = 1, ... ) {
 #'
 #'
 #' Given a desired sample size and a data generating mechanism,
-#' generate a dataset of Y0s and indiviual treatment effects.
+#' generate a dataset of Y0s and individual treatment effects.
 #'
 #'
 #' @param n Sample size to test
@@ -60,7 +71,7 @@ tx_function_factory <- function( distribution, ATE = 0, tx_scale = 1, ... ) {
 #'   treatment effects.  Default is tx_constant.
 #' @return Tibble (dataframe) with two columns, one of Y0s and one
 #'   (tau) of treatment effects.
-#'   
+#'
 #' @import tibble
 #' @export
 generate_finite_data <- function( n,
@@ -79,6 +90,10 @@ generate_finite_data <- function( n,
 }
 
 
+
+
+
+
 #' Calculate power for a finite-sample dataset.
 #'
 #' Given a fixed schedule of potential outcomes and a proportion to
@@ -95,7 +110,7 @@ generate_finite_data <- function( n,
 #'
 #' @return Small tibble with statistics of the power calculation (true
 #'   effect being tested, power to detect, sample size, etc.)
-#'   
+#'
 #' @import tibble
 #' @export
 calc_power_finite <- function( Y0, tau, p_tx, R = 100,
@@ -195,7 +210,7 @@ calc_power_ICC <- function( rps, iter_per_set ) {
                 family=binomial )
     #display( M1 )
     V = VarCorr( M1 )$gid[1,1]
-    ICC =  V / ( V + pi^2/3 )
+    ICC =  V / ( V + pi^(2/3) )
     ICC
     rng = boot::inv.logit( fixef(M1)[[1]] + c( -sqrt(V), sqrt(V) ) )
 
@@ -226,7 +241,7 @@ calc_power_ICC <- function( rps, iter_per_set ) {
 #' @inheritParams generate_finite_data
 #'
 #' @param iter_per_set Number of permutations per finite dataset.
-#' @param calc_ICC Calculate how much
+#' @param calc_ICC Calculate how much power varies across finite datasets.
 #' @import tidyverse
 #' @export
 calc_power <- function( n,
@@ -339,9 +354,9 @@ explore_stephenson_s <- function( s = c(2,5,10,30),
   if ( !parallel ) {
     rps = map( rep( iter_per_set, n_blocks ), one_run )
   } else {
- #   require( future )
-#    require( parallel )
- #   require( furrr )
+    require( future )
+    require( parallel )
+    require( furrr )
     future::plan(multisession,
                  workers = parallel::detectCores() - 1 )
     rps = future_map( rep( iter_per_set, n_blocks ),

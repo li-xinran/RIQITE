@@ -24,14 +24,14 @@ rank_score <- function( n, method.list = list(name = "Wilcoxon") ){
 
 
 #' Generate matrix of complete randomization assignments
-#' 
+#'
 #' Draw multiple assignments from a completely randomized experiment
 #'
 #' @param n Sample size
 #' @param m Number units treated
 #' @param nperm number of permutations.  Inf will generate all possible
 #'   permutations.
-#'   
+#'
 #' @export
 assign_CRE <- function(n, m, nperm){
   if(is.finite(nperm)){
@@ -54,7 +54,7 @@ assign_CRE <- function(n, m, nperm){
 }
 
 
-#' rand dist of the rank score stat
+#' Generate randomization dist of the rank score stat
 #'
 #'   Generate the null distribution of the given test statistic for an
 #'   experiment with m treated out of n units.
@@ -187,18 +187,18 @@ conf_quant_larger <- function( Z, Y, k.vec = NULL, method.list = NULL, score = N
   c.max = Y1.max - Y0.min + tol
   c.min = Y1.min - Y0.max - tol
 
-  
+
 
   # sort the treated units
   if(is.null(ind.sort.treat)){
     ind.sort.treat = sort_treat(Y, Z)
   }
-  
+
   if( is.null(k.vec) ){
-    
+
     # conf interval for all quantiles tau_{(k)} #
     c.limit = rep(NA, n)
-    
+
     for(k in n:(n-m)){
       # define the target fun #
       # f > 0 <==> p-value <= alpha
@@ -234,21 +234,21 @@ conf_quant_larger <- function( Z, Y, k.vec = NULL, method.list = NULL, score = N
       }
       c.limit[k] = c.sol
     }
-    
+
     if( n-m > 1){
       c.limit[1:(n-m-1)] = c.limit[n-m]
     }
-    
+
     c.limit[c.limit > (Y1.max - Y0.min) + tol/2] = Inf
   }else{
-    
+
     k.vec.sort = sort(k.vec, decreasing = FALSE)
     j.max = length(k.vec.sort)
-    j.min = max( sum(k.vec <= (n-m)), 1) 
-    
+    j.min = max( sum(k.vec <= (n-m)), 1)
+
     # conf interval for tau_{(k)} with k in k.vec#
     c.limit = rep(NA, j.max)
-    
+
     for(j in j.max:j.min){
       # define the target fun #
       # f > 0 <==> p-value <= alpha
@@ -285,15 +285,15 @@ conf_quant_larger <- function( Z, Y, k.vec = NULL, method.list = NULL, score = N
       }
       c.limit[j] = c.sol
     }
-    
-    
+
+
     if(j.min > 1){
       c.limit[1:(j.min-1)] = c.limit[j.min]
     }
-    
+
     c.limit[c.limit > (Y1.max - Y0.min) + tol/2] = Inf
   }
-  
+
   return( c.limit )
 }
 
@@ -334,7 +334,7 @@ conf_quant_larger <- function( Z, Y, k.vec = NULL, method.list = NULL, score = N
 #' @export
 pval_quantile <- function(Z, Y, k, c, alternative = "greater",
                           method.list = list( name = "Stephenson", s = 10 ),
-                          score = NULL, stat.null = NULL, nperm = 10^6, Z.perm = NULL, 
+                          score = NULL, stat.null = NULL, nperm = 10^6, Z.perm = NULL,
                           switch = TRUE ){
 
   # Check inputs
@@ -385,41 +385,50 @@ pval_quantile <- function(Z, Y, k, c, alternative = "greater",
 
 
 
-#' Randomization inference for quantiles of individual treatment effects
+#' Randomization inference for quantiles of individual treatment
+#' effects
 #'
-#' Obtain one-sided or two-sided confidence intervals for all quantiles of
-#' individual treatment effects
+#' Obtain one-sided or two-sided confidence intervals for all
+#' quantiles of individual treatment effects
 #'
 #' @param Z An \eqn{n} dimensional treatment assignment vector.
 #' @param Y An \eqn{n} dimensional observed outcome vector.
-#' @param k.vec A vector that specifies the quantiles of individual effects under investigation. 
-#' If it equals NULL, then we consider all quantiles of individual effects.
-#' @param alternative A character takes value "greater", "less" and "two.sided",
-#'   indicating whether the confidence intervals are one-sided with lower or
-#'   upper confidence limits or two-sided.
+#' @param k.vec A vector that specifies the quantiles of individual
+#'   effects under investigation. If it equals NULL, then we consider
+#'   all quantiles of individual effects.
+#' @param alternative A character takes value "greater", "less" and
+#'   "two.sided", indicating whether the confidence intervals are
+#'   one-sided with lower or upper confidence limits or two-sided.
 #' @param method.list A list specifies the choice of the rank sum test
-#'   statistic. For example, list(name="Wilcoxon") means the Wilcoxon rank sum
-#'   statistic, and list(name = "Stephenson", s = 10) means the Stephenson rank
-#'   sum statistic with parameter s=10.
-#' @param score An \eqn{n} dimensional transformed ranks, i.e., (phi(1), phi(2),
-#'   ..., phi(n)), where phi() denotes the rank transformation function.
-#' @param stat.null An vector whose empirical distribution approximates the
-#'   randomization distribution of the rank sum statistic.
-#' @param nperm A positive integer representing the number of permutations for
-#'   approximating the randomization distribution of the rank sum statistic.
-#' @param Z.perm A \eqn{n \times nperm} matrix that specifies the permutated assignments for approximating the null distribution of the test statistic.
-#' @param alpha A numerical object, where 1-alpha indicates the confidence
-#'   level.
-#' @param tol A numerical object specifying the precision of the obtained
-#'   confidence intervals. For example, if tol = 10^(-3), then the confidence
-#'   limits are precise up to 3 digits.
-#' @param switch A logical object indicating whether performing treatment label
-#'   switching to make the treated group have larger size.
+#'   statistic. For example, list(name="Wilcoxon") means the Wilcoxon
+#'   rank sum statistic, and list(name = "Stephenson", s = 10) means
+#'   the Stephenson rank sum statistic with parameter s=10.
+#' @param score An \eqn{n} dimensional transformed ranks, i.e.,
+#'   (phi(1), phi(2), ..., phi(n)), where phi() denotes the rank
+#'   transformation function.
+#' @param stat.null An vector whose empirical distribution
+#'   approximates the randomization distribution of the rank sum
+#'   statistic.  If NULL, this will be calculated internally.
+#' @param nperm A positive integer representing the number of
+#'   permutations for approximating the randomization distribution of
+#'   the rank sum statistic.
+#' @param Z.perm A \eqn{n \times nperm} matrix that specifies the
+#'   permutated assignments for approximating the null distribution of
+#'   the test statistic.
+#' @param alpha A numerical object, where 1-alpha indicates the
+#'   confidence level.
+#' @param tol A numerical object specifying the precision of the
+#'   obtained confidence intervals. For example, if tol = 10^(-3),
+#'   then the confidence limits are precise up to 3 digits.
+#' @param switch A logical object indicating whether performing
+#'   treatment label switching to make the treated group have larger
+#'   size.
 #'
-#' @return A list with the elements \item{lower}{An \eqn{n} dimensional vector
-#'   consisting of lower confidence limits for individual effects sorted
-#'   increasingly.} \item{upper}{An \eqn{n} dimensional vector consisting of
-#'   upper confidence limits for individual effects sorted increasingly.}
+#' @return A list with the elements \item{lower}{An \eqn{n}
+#'   dimensional vector consisting of lower confidence limits for
+#'   individual effects sorted increasingly.} \item{upper}{An \eqn{n}
+#'   dimensional vector consisting of upper confidence limits for
+#'   individual effects sorted increasingly.}
 #'
 #' @export
 ci_quantile <- function(Z, Y, k.vec = NULL, alternative = "greater", method.list = list( name = "Stephenson", s = 10 ),
@@ -438,7 +447,7 @@ ci_quantile <- function(Z, Y, k.vec = NULL, alternative = "greater", method.list
   n = length(Z)
 
   # switching for larger treated group #
-  if( sum(Z==1) < n/2 & switch ){
+  if( switch && sum(Z==1) < n/2 ){
     Z = 1-Z
     Y = -1 * Y
     if(!is.null(stat.null)){
@@ -448,16 +457,16 @@ ci_quantile <- function(Z, Y, k.vec = NULL, alternative = "greater", method.list
       stat.null = sum(score) - stat.null
     }
   }
-  
-  
-  
-  if(is.null(k.vec)){
+
+
+
+  if(is.null(k.vec)) {
     conf.int = data.frame(k = c(1:n), lower = rep(NA, n), upper = rep(NA, n))
-  }else{
+  } else {
     k.vec = sort(k.vec, decreasing = FALSE)
     conf.int = data.frame(k = k.vec, lower = rep(NA, length(k.vec)), upper = rep(NA, length(k.vec)))
   }
-  
+
 
   if( alternative == "greater" ){
     c.lower = conf_quant_larger(Z = Z, Y = Y, k.vec = k.vec, method.list = method.list, score = score,
@@ -483,7 +492,7 @@ ci_quantile <- function(Z, Y, k.vec = NULL, alternative = "greater", method.list
   if(alternative == "two.sided"){
     c.lower = conf_quant_larger(Z = Z, Y = Y, k.vec = k.vec, method.list = method.list, score = score,
                                 stat.null = stat.null, nperm = nperm, Z.perm = Z.perm, alpha = alpha/2, tol = tol )
-    
+
     if(is.null(k.vec)){
       k.vec.rev = NULL
     }else{
@@ -504,19 +513,19 @@ if( FALSE ){
   Z = sample( c(rep(1, m), rep(0, n-m)) )
   Y = rnorm(n) + 2 * Z
   method.list = list( name = "Stephenson", s = 6 )
-  
+
   k.vec = c(1:n)
   alternative = "two.sided"
-  
+
   stat.null = null_dist( n, m, method.list = method.list, nperm = 10^3 )
-  
+
   a = ci_quantile(Z, Y, alternative = alternative, method.list = method.list,
                          stat.null = stat.null, alpha = 0.05,
                           tol = 10^(-3), switch = FALSE)
-  
+
   b = ci_quantile(Z, Y, k.vec = k.vec, alternative = alternative, method.list = method.list,
                   stat.null = stat.null, alpha = 0.05,
                   tol = 10^(-3), switch = FALSE)
-  
+
   cbind(a[k.vec, ], b)
 }

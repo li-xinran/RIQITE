@@ -2,7 +2,8 @@
 % Please edit documentation in R/RI_Quantile_20220919.R
 \name{ci_quantile}
 \alias{ci_quantile}
-\title{Randomization inference for quantiles of individual treatment effects}
+\title{Randomization inference for quantiles of individual treatment
+effects}
 \usage{
 ci_quantile(
   Z,
@@ -24,46 +25,54 @@ ci_quantile(
 
 \item{Y}{An \eqn{n} dimensional observed outcome vector.}
 
-\item{k.vec}{A vector that specifies the quantiles of individual effects under investigation.
-If it equals NULL, then we consider all quantiles of individual effects.}
+\item{k.vec}{A vector that specifies the quantiles of individual
+effects under investigation. If it equals NULL, then we consider
+all quantiles of individual effects.}
 
-\item{alternative}{A character takes value "greater", "less" and "two.sided",
-indicating whether the confidence intervals are one-sided with lower or
-upper confidence limits or two-sided.}
+\item{alternative}{A character takes value "greater", "less" and
+"two.sided", indicating whether the confidence intervals are
+one-sided with lower or upper confidence limits or two-sided.}
 
 \item{method.list}{A list specifies the choice of the rank sum test
-statistic. For example, list(name="Wilcoxon") means the Wilcoxon rank sum
-statistic, and list(name = "Stephenson", s = 10) means the Stephenson rank
-sum statistic with parameter s=10.}
+statistic. For example, list(name="Wilcoxon") means the Wilcoxon
+rank sum statistic, and list(name = "Stephenson", s = 10) means
+the Stephenson rank sum statistic with parameter s=10.}
 
-\item{score}{An \eqn{n} dimensional transformed ranks, i.e., (phi(1), phi(2),
-..., phi(n)), where phi() denotes the rank transformation function.}
+\item{score}{An \eqn{n} dimensional transformed ranks, i.e.,
+(phi(1), phi(2), ..., phi(n)), where phi() denotes the rank
+transformation function.}
 
-\item{stat.null}{An vector whose empirical distribution approximates the
-randomization distribution of the rank sum statistic.}
+\item{stat.null}{An vector whose empirical distribution
+approximates the randomization distribution of the rank sum
+statistic.  If NULL, this will be calculated internally.}
 
-\item{nperm}{A positive integer representing the number of permutations for
-approximating the randomization distribution of the rank sum statistic.}
+\item{nperm}{A positive integer representing the number of
+permutations for approximating the randomization distribution of
+the rank sum statistic.}
 
-\item{Z.perm}{A \eqn{n \times nperm} matrix that specifies the permutated assignments for approximating the null distribution of the test statistic.}
+\item{Z.perm}{A \eqn{n \times nperm} matrix that specifies the
+permutated assignments for approximating the null distribution of
+the test statistic.}
 
-\item{alpha}{A numerical object, where 1-alpha indicates the confidence
-level.}
+\item{alpha}{A numerical object, where 1-alpha indicates the
+confidence level.}
 
-\item{tol}{A numerical object specifying the precision of the obtained
-confidence intervals. For example, if tol = 10^(-3), then the confidence
-limits are precise up to 3 digits.}
+\item{tol}{A numerical object specifying the precision of the
+obtained confidence intervals. For example, if tol = 10^(-3),
+then the confidence limits are precise up to 3 digits.}
 
-\item{switch}{A logical object indicating whether performing treatment label
-switching to make the treated group have larger size.}
+\item{switch}{A logical object indicating whether performing
+treatment label switching to make the treated group have larger
+size.}
 }
 \value{
-A list with the elements \item{lower}{An \eqn{n} dimensional vector
-consisting of lower confidence limits for individual effects sorted
-increasingly.} \item{upper}{An \eqn{n} dimensional vector consisting of
-upper confidence limits for individual effects sorted increasingly.}
+A list with the elements \item{lower}{An \eqn{n}
+dimensional vector consisting of lower confidence limits for
+individual effects sorted increasingly.} \item{upper}{An \eqn{n}
+dimensional vector consisting of upper confidence limits for
+individual effects sorted increasingly.}
 }
 \description{
-Obtain one-sided or two-sided confidence intervals for all quantiles of
-individual treatment effects
+Obtain one-sided or two-sided confidence intervals for all
+quantiles of individual treatment effects
 }

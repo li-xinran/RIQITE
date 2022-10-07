@@ -9,7 +9,8 @@ tx_function_factory(distribution, ATE = 0, tx_scale = 1, ...)
 \arguments{
 \item{distribution}{A string name of a distribution.  "constant" is
 a constant treatment effect. "scale" is a scaling of Y0.  "rexp"
-and "rnorm" are those random distributions.}
+and "rnorm" are those random distributions.  "linear" is a linear
+function; see above.}
 
 \item{ATE}{the average treatment effect.  Ignored by "scale"
 option.}
@@ -25,7 +26,13 @@ sd for rnorm).}
 A function of the form tx_function( Y0 ).
 }
 \description{
-The function retuned is a function that returns a vector of
+The function returned is a function that returns a vector of
 treatment impacts to go with passed vector of Y0 values.  I.e.,
 final function is of format tx_function( Y0 ).
+}
+\details{
+For the linear option, the impacts are a linear function of Y0 of
+ATE + rho Y0 + epsilon, with epsilon normally distributed with
+standard deviation of \code{tx_scale}.  \code{rho} needs to be passed as an
+extra argument.
 }

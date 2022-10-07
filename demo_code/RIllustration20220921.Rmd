@@ -1,10 +1,12 @@
 ---
-title: "**Real data analysis and power analysis using the developed package RIQITE**"
+title: "Data analysis and power analysis using the developed package RIQITE"
 author: "Devin Caughey, Allan Dafoe, Xinran Li, and Luke Miratrix"
 output:
   pdf_document:
     citation_package: natbib
     number_sections: yes
+editor_options: 
+  chunk_output_type: console
 ---
 
 ---
@@ -15,28 +17,32 @@ link-citations: true
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-setwd("~/Dropbox/Own/Projects/Quantile Effects/code2021Aug/R illustration")
+#setwd("~/Dropbox/Own/Projects/Quantile Effects/code2021Aug/R illustration")
+library(dplyr)
+library(ggplot2)
+library( RIQITE )
+set.seed(1)
+
 ```
 
 # Install the RIQITE package
 We first install the package from Github. 
 The github page of the package (<https://github.com/li-xinran/RIQITE>) contains main functions with detailed explanation in R documentation, as well as a simple illustrating example. 
-Below we will also use the package to analyze the real data sets in the paper. 
-```{r, message=FALSE}
+Below we provide the code used to analyze the data sets in the paper. 
+
+Install via `devtools`, and then load:
+```{r, message=FALSE, eval=FALSE}
 devtools::install_github("li-xinran/RIQITE")
+library(RIQITE)
 ```
 
 
-# Testing monotonicity of an strumental variable
+# Testing monotonicity of an instrumental variable
 
 We get the data from @BlackEtAl11a, in which Table 1 cross-tabulates month of birth and school entry age (early/on-time/late) in terms of proportions and Table 3 reports the total number of subjects born in January or December (the "discontinuity subsample"): 104,023. We round the total number of subjects to 104,000, and, similar to @FioriniStevens14a, we assume there are equal numbers of subjects born in January and December.
+Based on these summary statistics, we generate the individual-level data as follows:
 
 ```{r get the data, message=FALSE}
-rm(list=ls())
-library(dplyr)
-library(ggplot2)
-library(RIQITE)
-set.seed(1)
 x <- matrix(0, 2, 3, dimnames=list(Month=c("Dec", "Jan"), 
                                    Entry=c("Early", "On-Time", "Late")))
 n <- 104000
@@ -61,10 +67,14 @@ The following figure shows the empirical distribution functions of the school-en
 ```{r, fig.height = 3, fig.width = 3, fig.align = "center"}
 ggplot(data, aes(EntryAge, color = BirthMonth, linetype=BirthMonth)) +
   stat_ecdf(geom="step", show.legend=FALSE, size=1.3) +
-  annotate("text", x=c(7.2, 7.2), y=c(.145, .81), label=c("January", "December")) +
-  scale_x_continuous(breaks=seq(6, 8, .2)) + theme_bw() + 
-  theme( plot.background = element_blank(), panel.grid.major = element_blank(), 
-         panel.grid.minor = element_blank() ) + theme(plot.title=element_text(hjust=.5)) + 
+  annotate("text", x=c(7.2, 7.2), y=c(.145, .81), 
+           label=c("January", "December")) +
+  scale_x_continuous(breaks=seq(6, 8, .2)) + 
+  theme_bw() + 
+  theme( plot.background = element_blank(), 
+         panel.grid.major = element_blank(), 
+         panel.grid.minor = element_blank(),
+         plot.title=element_text(hjust=.5 ) ) + 
   labs(x="School-Entry Age (Years)", y="Probability") 
 ```
 
@@ -86,31 +96,38 @@ data$Y = data$EntryAge
 n <- length(data$Z)
 m <- sum(data$Z)
 nperm <- 10^4 # number of permutations for Monte Carlo approximation
+
+# Generate a sample of permutations
 Z.perm <- assign_CRE(n, m, nperm)
+
 # difference-in-means
 pval.dim <- pval_bound(Z=data$Z, Y=data$Y, c=0, method.list=list(name = "DIM"), 
                      alternative = "greater", Z.perm=Z.perm, impute="control")
 ci.dim<-ci_bound(Z=data$Z, Y=data$Y, alternative="greater", method.list=list(name="DIM"), 
                         Z.perm=Z.perm, impute="control", alpha=0.10)
+
 # Wilcoxon rank sum
 pval.wilc <- pval_quantile(Z=data$Z, Y=data$Y, k=n, c=0, alternative = "greater",
                            method.list=list(name="Stephenson", s=2), Z.perm=Z.perm )
 ci.wilc <- ci_quantile(Z=data$Z, Y=data$Y, k.vec = n, alternative = "greater", 
                 method.list=list(name="Stephenson", s=2), Z.perm=Z.perm,  alpha=0.10)
+
 # Stephenson rank sum
 pval.steph10 <- pval_quantile(Z=data$Z, Y=data$Y, k=n, c=0, alternative = "greater", 
                               method.list=list(name="Stephenson", s=10), Z.perm=Z.perm )
 ci.steph10 <- ci_quantile(Z=data$Z, Y=data$Y, k.vec = n, alternative = "greater", 
               method.list=list(name="Stephenson", s=10), Z.perm=Z.perm,  alpha=0.10)
+
 # classical Student's t-test
 ttest = t.test(data$Y[data$Z==1], data$Y[data$Z==0], alternative = "greater")
 pval.ttest = ttest$p.value
 ci.ttest = round( ttest$conf.int[1], digits = 3)
+
 # result for Table 1 in the paper
-result = data.frame(test=c("diff-in-means", "Wilcoxon", "Stephenson 10", "t test"), 
-                      pval=c(pval.dim, pval.wilc, pval.steph10, pval.ttest), 
+result = data.frame(test=c("diff-in-means", "Wilcoxon", "Stephenson 10", "t test"),
+                    pval=c(pval.dim, pval.wilc, pval.steph10, pval.ttest), 
                     lower = c(ci.dim, ci.wilc$lower, ci.steph10$lower, ci.ttest))
-result
+knitr::kable( result )
 ```
 
 Finally, we infer the effect range. The result shows that the range of the effect of birth month on school-entry age is at least 1 year, indicating significant individual effect heterogeneity. 
@@ -124,74 +141,64 @@ print(paste( "lower confidence limit for effect range is",
 save.image("BirthSchoolAge20220921.RData") # save the analysis result
 ```
 
+
+
 # Evaluating the effectiveness of professional development
 
-We get the data from @HSMHSD10. We remove units with missing outcomes, as well as units in Site 1 where there are no control outcomes. 
+We get the data from @HSMHSD10.
+The cleaned data, as described in the paper, is part of the package.
+We load it and estimate ATE via linear regression:
+
 ```{r get the professional development data, message=FALSE}
-rm(list=ls())
-set.seed(2)
-library(tidyverse)
-library(RIQITE)
-## DATA
-dat = read_csv( "cleanTeacher.csv",na = "." )
-dat = dplyr::select( dat, T.ID, Site, Tx, Per.1, Per.2, gain ) 
-dat = mutate( dat, TxAny = ifelse( Tx == "D", 0, 1 ) )
-# remove units with missing outcomes and units in Site 1 that has no control outcomes
-dat = filter( dat, !is.na( gain ) & Site != "S1" ) 
-dat = sample_n( dat, nrow(dat) )
-n = nrow(dat)
-table(dat$TxAny)
-print(paste("estimated average effect is", 
-            round(lm(gain~TxAny, dat)$coefficients[2], digits = 2)))
+data( electric_teachers )
+
+mod <- lm(gain~TxAny, data = electric_teachers)
+round(mod$coefficients[2], digits = 2)
 ```
 
 The following figure shows the histograms of the observed gain scores in the treatment and control groups. 
 ```{r, fig.height = 4, fig.width = 3.2, fig.align = "center"}
-hist(dat$gain[dat$TxAny==1], xlim = range(dat$gain), freq = FALSE, ylim = c(0, 0.065), 
-     col = "grey", border=FALSE, breaks = 20, main = NULL, xlab = "gain score")
-hist(dat$gain[dat$TxAny==0], freq = FALSE, add = TRUE, breaks = 20, col = NULL)
+hist(electric_teachers$gain[electric_teachers$TxAny==1], 
+     xlim = range(electric_teachers$gain), freq = FALSE, ylim = c(0, 0.065), 
+     col = "grey", border=FALSE, breaks = 20,
+     main = NULL, xlab = "gain score")
+hist(electric_teachers$gain[electric_teachers$TxAny==0], 
+     freq = FALSE, add = TRUE, breaks = 20, col = NULL)
 ```
 
 We first test the bounded null hypothesis that all individual effects are non-positive. 
 ```{r}
-nperm = 10^6
-pval.steph10 <- pval_quantile(Z=dat$TxAny, Y=dat$gain, k=n, c=0, alternative = "greater", 
+nperm = 10^4
+pval.steph10 <- pval_quantile(Z=electric_teachers$TxAny, Y=electric_teachers$gain, 
+                              k=n, c=0, alternative = "greater", 
                               method.list=list(name="Stephenson", s=10), nperm=nperm )
-print(paste("The p-value is", pval.steph10))
+pval.steph10 # final p-value
 ```
 
 
 
 We then conduct inference for all quantiles of individual treatment effects. The following figures show the 90% lower confidence limits for all quantiles of individual effects using Stephenson rank statistics with s = 10 and s = 2 (i.e., Wilcoxon rank), respectively. 
 ```{r, fig.height = 4, fig.width = 6.4, fig.align = "center"}
-ci10 = ci_quantile( Z=dat$TxAny, Y=dat$gain, alternative="greater", 
+ci10 = ci_quantile( Z=electric_teachers$TxAny, Y=electric_teachers$gain, alternative="greater", 
                   method.list=list( name="Stephenson", s=10 ), nperm=nperm, alpha=0.10 )
-ci2 = ci_quantile( Z=dat$TxAny, Y=dat$gain, alternative="greater", 
+ci2 = ci_quantile( Z=electric_teachers$TxAny, Y=electric_teachers$gain, alternative="greater", 
                   method.list=list( name="Stephenson", s=2 ), nperm=nperm, alpha=0.10 )
 par(mfrow = c(1, 2))
-for(s in c(10, 2)){
-  if(s==10){ci.limit = ci10$lower}
-  if(s==2){ci.limit = ci2$lower}
-  plot( NA, ylab="k", xlab=expression("lower"~"confidence"~"limit"~"for" ~tau[(k)]), 
-        ylim=c(102, 233)+c(-1, 1), xlim=range( ci.limit[ci.limit>-Inf] )+c(-0.5, 1.5),
-        main=paste0("s=", s) )
-  for(k in 1:length(ci.limit)){
-    lines( c( max( ci.limit[k], min(ci.limit[ci.limit>-Inf]) - 100 ), max(ci.limit)+10),
-           rep(k,2), col = "grey" )
-  }
-  points( ci.limit, c(1:length(ci.limit)), pch = ".", cex = 2 )
-  abline(v = 0, lty = 2)
-}
+plot_quantile_CIs(ci10, k_start = 102, main = "s=10" )
+plot_quantile_CIs(ci2, k_start = 102, main = "s=2" )
 ```
 
 Finally, we infer the effect range.
 ```{r}
-tau.max.lower = ci_quantile( Z=dat$TxAny, Y=dat$gain, k.vec=n, alternative="greater", 
+tau.max.lower = ci_quantile( Z=electric_teachers$TxAny, Y=electric_teachers$gain, k.vec=n, alternative="greater", 
               method.list=list( name="Stephenson", s=10 ), nperm=nperm, alpha=0.05 )$lower
-tau.min.upper = ci_quantile( Z=dat$TxAny, Y=dat$gain, k.vec=1, alternative="less", 
+tau.min.upper = ci_quantile( Z=electric_teachers$TxAny, Y=electric_teachers$gain, k.vec=1, alternative="less", 
               method.list=list( name="Stephenson", s=10 ), nperm=nperm, alpha=0.05 )$upper
-print(paste( "lower confidence limit for effect range is", 
-             max(0, tau.max.lower - tau.min.upper) ))
+max(0, tau.max.lower - tau.min.upper)
+```
+
+
+```{r, include=FALSE}
 save.image("Develop20220921.RData") # save the analysis result
 ```
 
@@ -199,16 +206,13 @@ save.image("Develop20220921.RData") # save the analysis result
 
 # Evaluating the effects of six-month nutrition therapy
 
-We get the data for the homefood study from <https://doi.org/10.7910/DVN/38X3LX>. We download the SPSS Binary (Original File Format) there. The details of the study can be found at <https://clinicaltrials.gov/ct2/show/NCT03995303>.
+We get the data for the homefood study from <https://doi.org/10.7910/DVN/38X3LX>.
+We download the SPSS Binary (Original File Format) there. The details of the study can be found at <https://clinicaltrials.gov/ct2/show/NCT03995303>.
+Once we have the file, we can load as follows:
+
 ```{r, warning=FALSE}
-rm(list=ls())
-set.seed(3)
-library(foreign)
-library(RIQITE)
-# source("power_simu_20220919.R")
-# source("RI_Quantile_20220919.R")
-# source("RI_Max_20220919.R")
-dat = read.spss("Data file, 24.09.2021.sav", to.data.frame=TRUE)
+dat = foreign::read.spss(here::here( "demo_code/Data file, 24.09.2021.sav" ),
+                         to.data.frame=TRUE)
 ```
 
 We focus on the effect of the treatment on the increase of lean body mass (kg) measured before and after the trial. We exclude two units with missing outcomes, resulting in 52 treated units and 52 control units.
@@ -230,7 +234,7 @@ hist(dat$change[dat$group=="control"], freq=FALSE, add=TRUE, breaks=10, col=NULL
 
 We infer the lower confidence limits for all quantiles of individual treatment effects. The following two figures show the 90% lower confidence limits for all quantiles of individual effects using Stephenson rank statistics with s = 6 and s = 2 (i.e., Wilcoxon rank), respectively
 ```{r, fig.height = 4, fig.width = 6.4, fig.align = "center"}
-nperm = 10^6
+nperm = 10^5
 ci6 = ci_quantile( Z=as.numeric(dat$group == "intervention"), Y=dat$change, 
                    alternative="greater", method.list=list(name="Stephenson", s=6), 
                    nperm=nperm, alpha=0.10 )
@@ -238,21 +242,15 @@ ci2 = ci_quantile( Z=as.numeric(dat$group == "intervention"), Y=dat$change,
                    alternative="greater", method.list=list(name="Stephenson", s=2), 
                    nperm=nperm, alpha=0.10 )
 par(mfrow = c(1, 2))
-for(s in c(6, 2)){
-  if(s==6){ci.limit = ci6$lower}
-  if(s==2){ci.limit = ci2$lower}
-  plot(NA, ylab="k", xlab=expression( "lower"~"confidence"~"limit"~"for" ~tau[(k)] ), 
-       ylim=c(n-37, n)+c(-1, 1)*1, xlim=range(ci.limit[ci.limit>-Inf])+c(-0.5, 1.5), 
-       main = paste0("s=", s))
-  for(k in 1:length(ci.limit)){
-    lines( c( max( ci.limit[k], min(ci.limit[ci.limit>-Inf]) - 100 ), max(ci.limit)+10), 
-           rep(k,2), col = "grey" )
-    }
-  points( ci.limit, c(1:length(ci.limit)), pch = 20 )
-  abline(v = 0, lty = 2)
-}
+plot_quantile_CIs(ci6, main="s=6", k_start = n-37)
+plot_quantile_CIs(ci2, main="s=2", k_start = n-37)
+```
+
+```{r, include=FALSE}
 save.image("Homefood20220921.RData") # save the analysis result
 ```
+
+
 
 # Power comparison among different Stephenson rank sum statistics
 
