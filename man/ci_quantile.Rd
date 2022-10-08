@@ -66,11 +66,9 @@ treatment label switching to make the treated group have larger
 size.}
 }
 \value{
-A list with the elements \item{lower}{An \eqn{n}
-dimensional vector consisting of lower confidence limits for
-individual effects sorted increasingly.} \item{upper}{An \eqn{n}
-dimensional vector consisting of upper confidence limits for
-individual effects sorted increasingly.}
+A dataframe with each row corresponding to the lower and
+upper confidence limits of the given tau(k).  Column names of
+"lower" and "upper".
 }
 \description{
 Obtain one-sided or two-sided confidence intervals for all

@@ -27,31 +27,31 @@
 #'
 #' @export
 tx_function_factory <- function( distribution, ATE = 0, tx_scale = 1, ... ) {
-  dots = list( ... )
-  if ( distribution == "constant" ) {
-    return( function( Y0 ) {
-      rep( ATE, length(Y0) )
-    } )
-  } else if ( distribution == "scale" ) {
-    return( function( Y0 ) {
-      Y0 * (dots$scale - 1)
-    } )
-  } else if ( distribution == "rexp") {
-    return( function( Y0 ) {
-      tx_scale * (rexp( length( Y0 ) ) - 1 ) + ATE
-    } )
-  } else if ( distribution == "rnorm") {
-    return( function( Y0 ) {
-      tx_scale * (rnorm( length( Y0 ) ) ) + ATE
-    } )
-  } else if ( distribution == "linear" ) {
-    stopifnot( !is.null( dots$Y0coef ) )
-    return( function( Y0 ) {
-      ATE + dots$Y0coef * Y0 + tx_scale * rnorm( length( Y0 ) )
-    })
-  } else {
-    stop( "Unrecognized distribution")
-  }
+    dots = list( ... )
+    if ( distribution == "constant" ) {
+        return( function( Y0 ) {
+            rep( ATE, length(Y0) )
+        } )
+    } else if ( distribution == "scale" ) {
+        return( function( Y0 ) {
+            Y0 * (dots$scale - 1)
+        } )
+    } else if ( distribution == "rexp") {
+        return( function( Y0 ) {
+            tx_scale * (rexp( length( Y0 ) ) - 1 ) + ATE
+        } )
+    } else if ( distribution == "rnorm") {
+        return( function( Y0 ) {
+            tx_scale * (rnorm( length( Y0 ) ) ) + ATE
+        } )
+    } else if ( distribution == "linear" ) {
+        stopifnot( !is.null( dots$rho ) )
+        return( function( Y0 ) {
+            ATE + dots$rho * Y0 + tx_scale * rnorm( length( Y0 ) )
+        })
+    } else {
+        stop( "Unrecognized distribution")
+    }
 }
 
 
@@ -64,9 +64,9 @@ tx_function_factory <- function( distribution, ATE = 0, tx_scale = 1, ... ) {
 #'
 #' @param n Sample size to test
 #' @param Y0_distribution Either a function to generate a set of Y0
-#'   values, or a list of discrete values to sample from (with
-#'   replacement).  Function takes single parameter of sample size.
-#'   Default is normal.
+#'   values, or a list of discrete values to bootstrap sample from
+#'   (with replacement).  Function takes single parameter of sample
+#'   size. Default is normal.
 #' @param tx_function Function that takes Y0 and returns a set of
 #'   treatment effects.  Default is tx_constant.
 #' @return Tibble (dataframe) with two columns, one of Y0s and one
@@ -77,16 +77,16 @@ tx_function_factory <- function( distribution, ATE = 0, tx_scale = 1, ... ) {
 generate_finite_data <- function( n,
                                   Y0_distribution = rnorm,
                                   tx_function = tx_function_factory("constant") ) {
-  Y0s = NA
-  if ( is.function(Y0_distribution) ) {
-    Y0s = Y0_distribution( n )
-  } else {
-    stopifnot( is.numeric(Y0_distribution) )
-    Y0s = sample( Y0_distribution, n, replace=TRUE )
-  }
-  tau = tx_function( Y0s )
+    Y0s = NA
+    if ( is.function(Y0_distribution) ) {
+        Y0s = Y0_distribution( n )
+    } else {
+        stopifnot( is.numeric(Y0_distribution) )
+        Y0s = sample( Y0_distribution, n, replace=TRUE )
+    }
+    tau = tx_function( Y0s )
 
-  tibble( Y0 = Y0s, tau = tau )
+    tibble( Y0 = Y0s, tau = tau )
 }
 
 
@@ -98,7 +98,7 @@ generate_finite_data <- function( n,
 #'
 #' Given a fixed schedule of potential outcomes and a proportion to
 #' assign to treatment, calculate (via simulation) the power to detect
-#' a given quantile effect.
+#' a given quantile effect for that specific dataset.
 #'
 #' @inheritParams pval_quantile
 #'
@@ -109,7 +109,9 @@ generate_finite_data <- function( n,
 #' @param c Threshold for null (see pval_quantile)
 #'
 #' @return Small tibble with statistics of the power calculation (true
-#'   effect being tested, power to detect, sample size, etc.)
+#'   effect being tested, power to detect, sample size, etc.).  sd_Y0, sd_Y1, sd_tau
+#'   are the standard deviations of the potential outcomes and individual treatment impacts, and r
+#'   is the correlation of Y0 and the treatment effects.
 #'
 #' @import tibble
 #' @export
@@ -122,26 +124,30 @@ calc_power_finite <- function( Y0, tau, p_tx, R = 100,
                                score = NULL,
                                stat.null = NULL,
                                nperm = 1000) {
-  n = length(Y0)
-  stopifnot( percentile >= 0 && percentile <= 1 )
-  k = round( percentile * n )
+    n = length(Y0)
+    stopifnot( percentile >= 0 && percentile <= 1 )
+    k = round( percentile * n )
 
-  rps = rerun( R, {
-    Z = as.numeric( sample(n) <= p_tx * n )
+    rps = rerun( R, {
+        Z = as.numeric( sample(n) <= p_tx * n )
 
-    Yobs = Y0 + ifelse( Z, tau, 0 )
-    pval_quantile( Z, Yobs, k = k, c = 0,
-                   alternative = alternative,
-                   method.list = method.list,
-                   score = score,
-                   stat.null = stat.null,
-                   nperm = nperm,
-                   switch = FALSE )
-  } )
-  rps = unlist(rps)
-  true_tau = sort(tau)[k]
-  tibble( n = n, k = k, tau_k = true_tau,
-          power = mean(rps <= alpha) )
+        Yobs = Y0 + ifelse( Z, tau, 0 )
+        pval_quantile( Z, Yobs, k = k, c = 0,
+                       alternative = alternative,
+                       method.list = method.list,
+                       score = score,
+                       stat.null = stat.null,
+                       nperm = nperm,
+                       switch = FALSE )
+    } )
+    rps = unlist(rps)
+    true_tau = sort(tau)[k]
+    tibble( n = n, k = k, tau_k = true_tau,
+            sd_Y0 = sd( Y0 ),
+            sd_Y1 = sd( Y0 + tau ),
+            sd_tau = sd( tau ),
+            r = ifelse( sd_Y0 > 0 & sd_tau > 0, cor( tau, Y0 ), NA ),
+            power = mean(rps <= alpha) )
 }
 
 
@@ -154,6 +160,7 @@ calc_power_finite <- function( Y0, tau, p_tx, R = 100,
 #' see how power changes as a function of s.
 #'
 #' @param s Numeric list of s values to test using the Stephenson rank.
+#' @param stat.nulls Optional list of the precomputed null distributions of the statistics.
 #' @import dplyr
 #' @export
 explore_stephenson_s_finite <- function( s = c(2,5,10,30),
@@ -162,62 +169,70 @@ explore_stephenson_s_finite <- function( s = c(2,5,10,30),
                                          alpha = 0.05,
                                          c = 0,
                                          alternative = "greater",
-                                         score = NULL,
-                                         stat.null = NULL,
-                                         nperm = 1000) {
-  n = length(Y0)
-  stopifnot( n == length( tau ) )
-  stopifnot( p_tx*n >= 1 && p_tx*n <= n-1 )
+                                         stat.nulls = NULL,
+                                         nperm = 1000 ) {
+    n = length(Y0)
+    stopifnot( n == length( tau ) )
+    stopifnot( p_tx*n >= 1 && p_tx*n <= n-1 )
+    if ( !is.null( stat.nulls ) ) {
+        stopifnot( length(stat.nulls) == length(s) )
+        names(stat.nulls) = s
+    }
 
-  rs = map_df( s, function( ss ) {
-    calc_power_finite( Y0 = Y0, tau = tau, p_tx = p_tx, R = R,
-                       percentile = percentile,
-                       alpha = alpha, c = c,
-                       method.list = list(name = "Stephenson", s = ss),
-                       alternative = alternative,
-                       score = score, stat.null = stat.null, nperm = nperm )
-  } )
+    rs = map_df( s, function( ss ) {
+        sn = NULL
+        if ( !is.null(stat.nulls) ) {
+            sn = stat.nulls[[ as.character(ss) ]]
+        }
+        calc_power_finite( Y0 = Y0, tau = tau, p_tx = p_tx, R = R,
+                           percentile = percentile,
+                           alpha = alpha, c = c,
+                           method.list = list(name = "Stephenson", s = ss),
+                           alternative = alternative,
+                           stat.null = sn, nperm = nperm )
+    } )
 
-  rs$s = s
-  dplyr::select( rs, s, power )
+    rs$s = s
+    #dplyr::select( rs, s, power )
+    rs
 }
 
 
 
 if ( FALSE ) {
-  Y0 = rnorm( 500 )
-  tau = rexp( 500 ) - 1
-  explore_stephenson_s_finite( Y0 = Y0, tau = tau, p_tx = 0.5 )
+    Y0 = rnorm( 500 )
+    tau = rexp( 500 ) - 1
+    explore_stephenson_s_finite( Y0 = Y0, tau = tau, p_tx = 0.5, nperm = 100 )
 
 }
 
 
 
-# Fit a MLM to see how much different datasets impacts the
-# power.
+# Fit a MLM to collection of finite power calculations see how much
+# different datasets impacts the power.
 calc_power_ICC <- function( rps, iter_per_set ) {
-  require( lme4 )
-  rps$gid = 1:nrow(rps)
-  rps$k = round( iter_per_set * rps$power )
+    require( lme4 )
+    rps$gid = 1:nrow(rps)
+    rps$k = round( iter_per_set * rps$power )
 
-  if ( sd( rps$k ) == 0 ) {
-    tibble( ICC = NA,
-            pow_l = NA,
-            pow_h = NA )
-  } else {
+    if ( sd( rps$k ) == 0 ) {
+        tibble( ICC = NA,
+                pow_l = NA,
+                pow_h = NA )
+    } else {
 
-    M1 = glmer( cbind( k, iter_per_set-k ) ~ 1 + (1|gid), data=rps,
-                family=binomial )
-    #display( M1 )
-    V = VarCorr( M1 )$gid[1,1]
-    ICC =  V / ( V + pi^(2/3) )
-    ICC
-    rng = boot::inv.logit( fixef(M1)[[1]] + c( -sqrt(V), sqrt(V) ) )
+        M1 = glmer( cbind( k, iter_per_set-k ) ~ 1 + (1|gid), data=rps,
+                    family=binomial )
+        #display( M1 )
+        V = VarCorr( M1 )$gid[1,1]
+        ICC =  V / ( V + pi^(2/3) )
+        ICC
+        rng = boot::inv.logit( fixef(M1)[[1]] + c( -sqrt(V), sqrt(V) ) )
 
-    tibble( ICC = ICC,
-            pow_l = rng[[1]],
-            pow_h = rng[[2]] )
-  }
+        tibble( ICC = ICC,
+                pow_l = rng[[1]],
+                pow_h = rng[[2]] )
+    }
 }
 
 
@@ -260,46 +275,46 @@ calc_power <- function( n,
                         calc_ICC = FALSE ) {
 
 
-  one_run <- function( Rint ) {
-    dat = generate_finite_data( n = n,
-                                Y0_distribution,
-                                tx_function )
-    calc_power_finite( Y0 = dat$Y0, tau = dat$tau, p_tx = p_tx,
-                       R = Rint,
-                       percentile = percentile, alpha = alpha,
-                       c = c,
-                       alternative = alternative, method.list = method.list,
-                       score = score, stat.null = stat.null, nperm = nperm )
-  }
+    one_run <- function( Rint ) {
+        dat = generate_finite_data( n = n,
+                                    Y0_distribution,
+                                    tx_function )
+        calc_power_finite( Y0 = dat$Y0, tau = dat$tau, p_tx = p_tx,
+                           R = Rint,
+                           percentile = percentile, alpha = alpha,
+                           c = c,
+                           alternative = alternative, method.list = method.list,
+                           score = score, stat.null = stat.null, nperm = nperm )
+    }
 
-  n_block = round( R / iter_per_set )
-  rps = rerun( n_block, one_run( iter_per_set ) )
-  rps <- bind_rows( rps )
-  aggrps <- rps %>%
-    summarize( n = mean(n),
-               k = mean(k),
-               sd_tau = sd( .data$tau_k ),
-               tau_k = mean(tau_k),
-               SEpower = sd( .data$power ) / sqrt( n() ),
-               power = mean(power) ) %>%
-    relocate( tau_k, sd_tau, power, SEpower, .after = k )
+    n_block = round( R / iter_per_set )
+    rps = rerun( n_block, one_run( iter_per_set ) )
+    rps <- bind_rows( rps )
+    aggrps <- rps %>%
+        summarize( n = mean(n),
+                   k = mean(k),
+                   sd_tau = sd( .data$tau_k ),
+                   tau_k = mean(tau_k),
+                   SEpower = sd( .data$power ) / sqrt( n() ),
+                   power = mean(power) ) %>%
+        relocate( tau_k, sd_tau, power, SEpower, .after = k )
 
-  if ( calc_ICC ) {
-    aggrps = cbind( aggrps,
-                    calc_power_ICC(rps, iter_per_set) )
-  }
+    if ( calc_ICC ) {
+        aggrps = cbind( aggrps,
+                        calc_power_ICC(rps, iter_per_set) )
+    }
 
-  aggrps$method = paste0( method.list, collapse = "-" )
-  aggrps
+    aggrps$method = paste0( method.list, collapse = "-" )
+    aggrps
 }
 
 
 
 if ( FALSE ) {
-  pow = calc_power( 500,
-                    tx_function = tx_function_factory("rexp"),
-                    p_tx = 0.5 )
-  pow
+    pow = calc_power( 500,
+                      tx_function = tx_function_factory("rexp"),
+                      p_tx = 0.5 )
+    pow
 }
 
 
@@ -326,94 +341,115 @@ explore_stephenson_s <- function( s = c(2,5,10,30),
                                   alpha = 0.05,
                                   c = 0,
                                   alternative = "greater",
-                                  score = NULL,
-                                  stat.null = NULL,
                                   nperm = 1000,
                                   parallel = FALSE,
-                                  calc_ICC = FALSE ) {
+                                  calc_ICC = FALSE,
+                                  verbose = FALSE ) {
 
 
-  one_run <- function( Rint ) {
- #   require( tidyverse )
-    dat = generate_finite_data( n = n,
-                                Y0_distribution,
-                                tx_function )
-    explore_stephenson_s_finite( s = s,
-                                 Y0 = dat$Y0, tau = dat$tau,
-                                 p_tx = p_tx,
-                                 R = Rint,
-                                 percentile = percentile, alpha = alpha,
-                                 c = c,
-                                 alternative = alternative,
-                                 score = score, stat.null = stat.null,
-                                 nperm = nperm )
-  }
+    # generate null distributions
+    m = floor( n * p_tx )
+    Z.perm = assign_CRE(n, m, nperm)
+    stat.null.all = list()
+    method.list.all = list()
+    for( s.ind in seq_along(s) ) {
+        method.list.all[[s.ind]] = list( name = "Stephenson", s = s[s.ind] )
+        stat.null.all[[s.ind]] = null_dist(n, m, method.list = method.list.all[[s.ind]], Z.perm = Z.perm )
+    }
 
-  n_blocks = round( R / iter_per_set )
+    if ( verbose ) {
+        cat( "Null distributions calculated\n" )
+    }
 
-  if ( !parallel ) {
-    rps = map( rep( iter_per_set, n_blocks ), one_run )
-  } else {
-    require( future )
-    require( parallel )
-    require( furrr )
-    future::plan(multisession,
-                 workers = parallel::detectCores() - 1 )
-    rps = future_map( rep( iter_per_set, n_blocks ),
-                       one_run,
-                       .options = furrr_options(seed = NULL) )
-  }
-  rps <- bind_rows( rps, .id = "gid" )
+    one_run <- function( Rint ) {
+        dat = generate_finite_data( n = n,
+                                    Y0_distribution,
+                                    tx_function )
+        explore_stephenson_s_finite( s = s,
+                                     Y0 = dat$Y0, tau = dat$tau,
+                                     p_tx = p_tx,
+                                     R = Rint,
+                                     percentile = percentile, alpha = alpha,
+                                     c = c,
+                                     alternative = alternative,
+                                     stat.nulls = stat.null.all,
+                                     nperm = nperm )
+    }
 
-  aggrps <- rps %>% group_by( s ) %>%
-    summarise( SEpower = sd( power ) / sqrt( n() ),
-               power = mean( power ) ) %>%
-    relocate( SEpower, .after = power )
+    n_blocks = round( R / iter_per_set )
 
-  if ( calc_ICC ) {
-    rpg = rps %>% group_by( s ) %>% nest()
-    mods = rpg$data %>%
-      set_names(rpg$s) %>%
-      map_df( calc_power_ICC,
-              iter_per_set = iter_per_set,
-              .id = "s" ) %>%
-      mutate( s = as.numeric( s ) )
+    if ( !parallel ) {
+        rps = map( rep( iter_per_set, n_blocks ), one_run )
+    } else {
+        require( future )
+        require( parallel )
+        require( furrr )
+        future::plan(multisession,
+                     workers = parallel::detectCores() - 1 )
+        if ( verbose ) {
+            cat( "Spreading ", n_blocks, " jobs over ", parallel::detectCores() - 1, " cores\n" )
+        }
+        rps = future_map( rep( iter_per_set, n_blocks ),
+                          one_run,
+                          .options = furrr_options(seed = NULL), .progress = verbose )
+        future::plan("default")
+    }
+    rps <- bind_rows( rps, .id = "gid" )
 
-    aggrps <- left_join( aggrps, mods, by="s" )
-  }
+    aggrps <- rps %>% group_by( s ) %>%
+        summarise( EvarY0 = mean( sd_Y0^2 ),
+                   EvarY1 = mean( sd_Y1^2 ),
+                   Evartau = mean( sd_tau^2 ),
+                   Er = mean( r ),
+                   SEpower = sd( power ) / sqrt( n() ),
+                   power = mean( power ) ) %>%
+        relocate( SEpower, .after = power )
 
-  aggrps
+    if ( calc_ICC ) {
+        rpg = rps %>% group_by( s ) %>% nest()
+        mods = rpg$data %>%
+            set_names(rpg$s) %>%
+            map_df( calc_power_ICC,
+                    iter_per_set = iter_per_set,
+                    .id = "s" ) %>%
+            mutate( s = as.numeric( s ) )
+
+        aggrps <- left_join( aggrps, mods, by="s" )
+    }
+
+    aggrps
 }
 
 
 if ( FALSE ) {
-  ess = explore_stephenson_s( s = c( 2, 4, 5, 7, 10, 30 ),
-                              n = 500,
-                              tx_function = tx_function_factory("rexp"),
-                              p_tx = 0.5 )
-  ess
+    ess = explore_stephenson_s( s = c( 2, 5, 10 ),
+                                n = 500,
+                                tx_function = tx_function_factory("rexp"),
+                                p_tx = 0.5,
+                                nperm = 100 )
+    ess
 
-  ess2 = explore_stephenson_s( s = c( 2, 4, 5, 7, 10, 30 ),
-                               n = 500,
-                               tx_function = tx_function_factory("rnorm",
-                                                                 ATE = 0.2),
-                               p_tx = 0.5 )
-  ess2
+    ess2 = explore_stephenson_s( s = c( 2, 4, 5, 7, 10, 30 ),
+                                 n = 500,
+                                 tx_function = tx_function_factory("rnorm",
+                                                                   ATE = 0.2),
+                                 p_tx = 0.5 )
+    ess2
 
-  ess3 = explore_stephenson_s( s = c( 2, 4, 5, 7, 10, 30 ),
-                               n = 500,
-                               tx_function = tx_function_factory("constant",
-                                                                 ATE = 0.2),
-                               p_tx = 0.5 )
-  ess3
+    ess3 = explore_stephenson_s( s = c( 2, 4, 5, 7, 10, 30 ),
+                                 n = 500,
+                                 tx_function = tx_function_factory("constant",
+                                                                   ATE = 0.2),
+                                 p_tx = 0.5 )
+    ess3
 
-  ess4 = explore_stephenson_s( s = c( 2, 4, 5, 7, 10, 30 ),
-                               n = 500,
-                               Y0_distribution = rexp,
-                               tx_function = tx_function_factory("constant",
-                                                                 ATE = 0),
-                               p_tx = 0.5 )
-  ess4
+    ess4 = explore_stephenson_s( s = c( 2, 4, 5, 7, 10, 30 ),
+                                 n = 500,
+                                 Y0_distribution = rexp,
+                                 tx_function = tx_function_factory("constant",
+                                                                   ATE = 0),
+                                 p_tx = 0.5 )
+    ess4
 
 
 

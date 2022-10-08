@@ -29,29 +29,34 @@ max)}
 
 \item{c}{Threshold for null (see pval_quantile)}
 
-\item{alternative}{A character takes value "greater", "less" and "two.sided",
-indicating the alternative hypothesis.}
+\item{alternative}{A character takes value "greater", "less" and
+"two.sided", indicating the alternative hypothesis.}
 
 \item{method.list}{A list specifies the choice of the rank sum test
-statistic. For example, list(name="Wilcoxon") means the Wilcoxon rank sum
-statistic, and list(name = "Stephenson", s = 10) means the Stephenson rank
-sum statistic with parameter s=10.}
+statistic. For example, list(name="Wilcoxon") means the Wilcoxon
+rank sum statistic, and list(name = "Stephenson", s = 10) means
+the Stephenson rank sum statistic with parameter s=10.}
 
-\item{score}{An \eqn{n} dimensional transformed ranks, i.e., (phi(1), phi(2),
-..., phi(n)), where phi() denotes the rank transformation function.}
+\item{score}{An \eqn{n} dimensional transformed ranks, i.e.,
+(phi(1), phi(2), ..., phi(n)), where phi() denotes the rank
+transformation function.}
 
-\item{stat.null}{An vector whose empirical distribution approximates the
-randomization distribution of the rank sum statistic.}
+\item{stat.null}{An vector whose empirical distribution
+approximates the randomization distribution of the rank sum
+statistic.}
 
-\item{nperm}{A positive integer representing the number of permutations for
-approximating the randomization distribution of the rank sum statistic.}
+\item{nperm}{A positive integer representing the number of
+permutations for approximating the randomization distribution of
+the rank sum statistic.}
 }
 \value{
 Small tibble with statistics of the power calculation (true
-effect being tested, power to detect, sample size, etc.)
+effect being tested, power to detect, sample size, etc.).  sd_Y0, sd_Y1, sd_tau
+are the standard deviations of the potential outcomes and individual treatment impacts, and r
+is the correlation of Y0 and the treatment effects.
 }
 \description{
 Given a fixed schedule of potential outcomes and a proportion to
 assign to treatment, calculate (via simulation) the power to detect
-a given quantile effect.
+a given quantile effect for that specific dataset.
 }

@@ -22,7 +22,7 @@ library(dplyr)
 library(ggplot2)
 library( RIQITE )
 set.seed(1)
-
+nperm = 1000
 ```
 
 # Install the RIQITE package
@@ -82,9 +82,9 @@ We first perform the standard regression analysis assessing the relation between
 
 ```{r F test}
 lm.fit <- lm(EntryAge ~ (BirthMonth=="Dec"), data)
-print(paste( 
+cat(paste( 
   "esimated average effect is", round( as.numeric(lm.fit$coefficients[2]), digits = 3), 
-  "and F statistic is", round( as.numeric( summary(lm.fit)$fstatistic[1] ), digits = 0) 
+  "and F statistic is", round( as.numeric( summary(lm.fit)$fstatistic[1] ), digits = 0), "\n" 
   ))
 ```
 

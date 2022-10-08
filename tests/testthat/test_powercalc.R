@@ -94,7 +94,7 @@ test_that( "Explore s for emperical works", {
                               calc_ICC = TRUE )
   ess
   expect_true( nrow( ess ) == 3 )
-  expect_true( ncol( ess ) == 5 )
+  expect_true( ncol( ess ) == 10 )
 
 })
 

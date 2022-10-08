@@ -14,9 +14,9 @@ generate_finite_data(
 \item{n}{Sample size to test}
 
 \item{Y0_distribution}{Either a function to generate a set of Y0
-values, or a list of discrete values to sample from (with
-replacement).  Function takes single parameter of sample size.
-Default is normal.}
+values, or a list of discrete values to bootstrap sample from
+(with replacement).  Function takes single parameter of sample
+size. Default is normal.}
 
 \item{tx_function}{Function that takes Y0 and returns a set of
 treatment effects.  Default is tx_constant.}

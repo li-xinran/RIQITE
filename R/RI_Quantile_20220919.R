@@ -305,32 +305,40 @@ conf_quant_larger <- function( Z, Y, k.vec = NULL, method.list = NULL, score = N
 
 #' Randomization test for quantiles of individual treatment effects
 #'
-#' Obtain the p-value for testing the null hypothesis H0: tau_{(k)} <= c, or H0:
-#' tau_{(k)} >= c, or H0: tau_{(k)} = c, where tau_{(k)} denotes individual
-#' treatment effect at rank k.
+#' Obtain the p-value for testing the null hypothesis H0: tau_{(k)} <=
+#' c, or H0: tau_{(k)} >= c, or H0: tau_{(k)} = c, where tau_{(k)}
+#' denotes individual treatment effect at rank k.
 #'
 #' @param Z An \eqn{n} dimensional treatment assignment vector.
 #' @param Y An \eqn{n} dimensional observed outcome vector.
-#' @param k An integer between 1 and n specifying which quantile of individual
-#'   effect is of interest.
-#' @param c A numerical object specifying the threshold for the null hypothesis.
-#' @param alternative A character takes value "greater", "less" and "two.sided",
-#'   indicating the alternative hypothesis.
+#' @param k An integer between 1 and n specifying which quantile of
+#'   individual effect is of interest.
+#' @param c A numerical object specifying the threshold for the null
+#'   hypothesis.
+#' @param alternative A character takes value "greater", "less" and
+#'   "two.sided", indicating the alternative hypothesis.
 #' @param method.list A list specifies the choice of the rank sum test
-#'   statistic. For example, list(name="Wilcoxon") means the Wilcoxon rank sum
-#'   statistic, and list(name = "Stephenson", s = 10) means the Stephenson rank
-#'   sum statistic with parameter s=10.
-#' @param score An \eqn{n} dimensional transformed ranks, i.e., (phi(1), phi(2),
-#'   ..., phi(n)), where phi() denotes the rank transformation function.
-#' @param stat.null An vector whose empirical distribution approximates the
-#'   randomization distribution of the rank sum statistic.
-#' @param nperm A positive integer representing the number of permutations for
-#'   approximating the randomization distribution of the rank sum statistic.
-#' @param Z.perm A \eqn{n \times nperm} matrix that specifies the permutated assignments for approximating the null distribution of the test statistic.
-#' @param switch A logical object indicating whether performing treatment label
-#'   switching to make the treated group have larger size.
+#'   statistic. For example, list(name="Wilcoxon") means the Wilcoxon
+#'   rank sum statistic, and list(name = "Stephenson", s = 10) means
+#'   the Stephenson rank sum statistic with parameter s=10.
+#' @param score An \eqn{n} dimensional transformed ranks, i.e.,
+#'   (phi(1), phi(2), ..., phi(n)), where phi() denotes the rank
+#'   transformation function.
+#' @param stat.null An vector whose empirical distribution
+#'   approximates the randomization distribution of the rank sum
+#'   statistic.
+#' @param nperm A positive integer representing the number of
+#'   permutations for approximating the randomization distribution of
+#'   the rank sum statistic.
+#' @param Z.perm A \eqn{n \times nperm} matrix that specifies the
+#'   permutated assignments for approximating the null distribution of
+#'   the test statistic.
+#' @param switch A logical object indicating whether performing
+#'   treatment label switching to make the treated group have larger
+#'   size.
 #'
-#' @return The p-value for testing the specified null hypothesis of interest.
+#' @return The p-value for testing the specified null hypothesis of
+#'   interest.
 #' @export
 pval_quantile <- function(Z, Y, k, c, alternative = "greater",
                           method.list = list( name = "Stephenson", s = 10 ),
@@ -424,14 +432,13 @@ pval_quantile <- function(Z, Y, k, c, alternative = "greater",
 #'   treatment label switching to make the treated group have larger
 #'   size.
 #'
-#' @return A list with the elements \item{lower}{An \eqn{n}
-#'   dimensional vector consisting of lower confidence limits for
-#'   individual effects sorted increasingly.} \item{upper}{An \eqn{n}
-#'   dimensional vector consisting of upper confidence limits for
-#'   individual effects sorted increasingly.}
+#' @return A dataframe with each row corresponding to the lower and
+#'   upper confidence limits of the given tau(k).  Column names of
+#'   "lower" and "upper".
 #'
 #' @export
-ci_quantile <- function(Z, Y, k.vec = NULL, alternative = "greater", method.list = list( name = "Stephenson", s = 10 ),
+ci_quantile <- function(Z, Y, k.vec = NULL, alternative = "greater",
+                        method.list = list( name = "Stephenson", s = 10 ),
                         score = NULL, stat.null = NULL, nperm = 10^6, Z.perm = NULL, alpha = 0.05,
                         tol = 10^(-3), switch = TRUE){
   # Check inputs
@@ -507,6 +514,9 @@ ci_quantile <- function(Z, Y, k.vec = NULL, alternative = "greater", method.list
 }
 
 
+
+#### Testing/Demo code ####
+
 if( FALSE ){
   n = 100
   m = 50
@@ -517,15 +527,23 @@ if( FALSE ){
   k.vec = c(1:n)
   alternative = "two.sided"
 
-  stat.null = null_dist( n, m, method.list = method.list, nperm = 10^3 )
+  stat.null = RIQITE:::null_dist( n, m, method.list = method.list, nperm = 10^3 )
 
-  a = ci_quantile(Z, Y, alternative = alternative, method.list = method.list,
-                         stat.null = stat.null, alpha = 0.05,
-                          tol = 10^(-3), switch = FALSE)
 
-  b = ci_quantile(Z, Y, k.vec = k.vec, alternative = alternative, method.list = method.list,
+  a = ci_quantile(Z, Y,
+                  alternative = alternative, method.list = method.list,
+                  stat.null = stat.null, alpha = 0.05,
+                  tol = 10^(-3), switch = FALSE)
+  head( a )
+  class( a )
+
+  b = ci_quantile(Z, Y, k.vec = k.vec,
+                  alternative = alternative, method.list = method.list,
                   stat.null = stat.null, alpha = 0.05,
                   tol = 10^(-3), switch = FALSE)
 
   cbind(a[k.vec, ], b)
 }
+
+
+

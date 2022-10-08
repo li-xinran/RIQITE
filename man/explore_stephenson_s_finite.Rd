@@ -14,13 +14,14 @@ explore_stephenson_s_finite(
   alpha = 0.05,
   c = 0,
   alternative = "greater",
-  score = NULL,
-  stat.null = NULL,
+  stat.nulls = NULL,
   nperm = 1000
 )
 }
 \arguments{
 \item{s}{Numeric list of s values to test using the Stephenson rank.}
+
+\item{stat.nulls}{Optional list of the precomputed null distributions of the statistics.}
 }
 \description{
 Conduct power simulation against specific finite-sample dataset to

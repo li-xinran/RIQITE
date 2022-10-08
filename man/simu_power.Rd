@@ -15,7 +15,8 @@ simu_power(
   nperm = 10^3,
   tol = 10^(-3),
   switch = TRUE,
-  print.iter = 10
+  print.iter = 10,
+  keep_data = FALSE
 )
 }
 \arguments{
@@ -45,6 +46,8 @@ limits are precise up to 3 digits.}
 switching to make the treated group have larger size.}
 
 \item{print.iter}{An integer determining how frequently we report the progress of the simulation.}
+
+\item{keep_data}{TRUE means keep the datasets themselves.  FALSE means do not keep.}
 }
 \value{
 A list with the elements

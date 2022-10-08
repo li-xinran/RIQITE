@@ -16,11 +16,10 @@ explore_stephenson_s(
   alpha = 0.05,
   c = 0,
   alternative = "greater",
-  score = NULL,
-  stat.null = NULL,
   nperm = 1000,
   parallel = FALSE,
-  calc_ICC = FALSE
+  calc_ICC = FALSE,
+  verbose = FALSE
 )
 }
 \arguments{

@@ -37,6 +37,7 @@ normal_gen_PO <- function(n){
 #' @param switch A logical object indicating whether performing treatment label
 #'   switching to make the treated group have larger size.
 #' @param print.iter An integer determining how frequently we report the progress of the simulation.
+#' @param keep_data TRUE means keep the datasets themselves.  FALSE means do not keep.
 #'
 #' @return A list with the elements
 #'   \item{Steph.s.vec}{An vector specifying the parameters for a sequence of Stephenson rank
@@ -53,7 +54,8 @@ normal_gen_PO <- function(n){
 simu_power <- function(gen = normal_gen_PO, n = 100, treat.prop = 0.5, iter.max = 100,
                         Steph.s.vec = c(2, 5, 10),
                         alternative = "greater", alpha = 0.05,
-                        nperm = 10^3, tol = 10^(-3), switch = TRUE, print.iter = 10
+                        nperm = 10^3, tol = 10^(-3), switch = TRUE, print.iter = 10,
+                       keep_data = FALSE
                         ){
 
   m = floor( n * treat.prop )
@@ -73,6 +75,7 @@ simu_power <- function(gen = normal_gen_PO, n = 100, treat.prop = 0.5, iter.max 
     ci.lower.all[[s.ind]] = matrix(NA, nrow = n, ncol = iter.max)
   }
   Z.CRE = assign_CRE(n, m, iter.max)
+
   dat.all = list()
   for(iter in 1:iter.max){
     dat = gen(n)
@@ -101,15 +104,18 @@ simu_power <- function(gen = normal_gen_PO, n = 100, treat.prop = 0.5, iter.max 
   #   print( mean( colSums(ci.lower.all[[s.ind]] > 0) ) )
   # }
 
-  return(list(
+  res <- list(
     Steph.s.vec = Steph.s.vec,
-    dat.all = dat.all,
     Z.CRE = Z.CRE,
     Z.perm = Z.perm,
     method.list.all = method.list.all,
     ci.upper.all = ci.upper.all,
     ci.lower.all = ci.lower.all
-    ))
+    )
+  if ( keep_data ) {
+    res$dat.all = dat.all
+  }
+  return( res )
 }
 
 
@@ -151,6 +157,10 @@ summary_power <- function(result, measure = c( "CI_n(c)", "test_tau(k)", "CI_tau
     return(tab)
   }
 
+  if ( is.null( k ) || !is.numeric( k ) ) {
+    stop( sprintf( "Need to supply k (from 1 to %d) for quantile to target for summary calculation",
+                   nrow( result$Z.CRE ) ) )
+  }
 
   if(measure == "test_tau(k)" & alternative == "greater"){
     tab = data.frame(s = result$Steph.s.vec, power.mean = rep(NA, length(result$Steph.s.vec)))
@@ -190,6 +200,8 @@ summary_power <- function(result, measure = c( "CI_n(c)", "test_tau(k)", "CI_tau
 
 if(FALSE){
 
+  library( RIQITE )
+
   normal_gen_PO <- function(n){
     mu0 = 0; sd0 = 1
     mu1 = 1; sd1 = 0.5
@@ -201,18 +213,30 @@ if(FALSE){
   }
 
   # Small number of iters for easier exploration
-  result = simu_power( gen = normal_gen_PO, n = 120, treat.prop = 0.5, iter.max = 10,
-                       Steph.s.vec = c(2, 4, 6, 10, 30, 60),
+  result = simu_power( gen = normal_gen_PO, n = 120, treat.prop = 0.5, iter.max = 100,
+                       Steph.s.vec = c(2, 10, 60),
                        alternative = "greater", alpha = 0.05,
-                       nperm = 10^4, tol = 10^(-3), switch = TRUE )
+                       nperm = 10^3, tol = 10^(-3), switch = TRUE )
 
   summary_power(result, measure = "CI_n(c)", alternative = "greater", cutoff = 0)
-  summary_power(result, measure = "test_tau(k)" )
-  summary_power(result, measure = "CI_tau(k)" )
+  debugonce( summary_power )
+  summary_power(result, measure = "test_tau(k)", k = 120 )
+  summary_power(result, measure = "CI_tau(k)", k = 120 )
 
   names( result )
   dim( result$Z.CRE )
-  dim( result$Z.perm )
+  dim( result$Z.perm )  # null distribution
+  result$method.list.all
+
+  cil <- result$ci.lower.all
+  length( cil )
+  dim( cil[[1]] )
+  cil[[1]][,1]
+
+  # one-sided, so all upper is infinity.
+  result$ci.upper.all[[1]]
+
+
 
   ### NOT SURE WHAT FOLLOWING CODE DOES ###
   library(utils)
