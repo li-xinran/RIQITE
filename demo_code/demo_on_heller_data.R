@@ -5,41 +5,14 @@ library(tidyverse)
 library( RIQITE )
 
 ## DATA
-dat = read_csv( here::here( "demo_code/cleanTeacher.csv" ), na = "." )
-head( dat )
-dat = dplyr::select( dat, T.ID, Site, Tx, Per.1, Per.2, gain )
-head( dat )
-table( dat$Tx, dat$Site, is.na( dat$gain ) )
-filter( dat, is.na( gain ), Site =="S1" )
-dat = mutate( dat,
-              TxAny = ifelse( Tx == "D", 0, 1 ) )
-
-# Site 1 apparently has no control scores; not sure why.
-dat = filter( dat, !is.na( gain ) & Site != "S1" )
-nrow( dat )
-dat$gain
+data( "electric_teachers" )
+dat = electric_teachers
 
 set.seed( 1010101 )
 
 # scramble order of data
 dat = sample_n( dat, nrow(dat) )
 
-# Data has three testing occasions (1, 2, and 3 in the data):
-#  - Baseline (before Tx),
-#  - Post treatment,
-#  - long term follow up.
-
-# The gain (post score - pre score) for all teachers in percentage point correct
-# on the test of electric circuit knowledge (we call this "content knowledge").
-
-# For more on the data see
-#
-# Heller, J. I., Shinohara, M., Miratrix, L., Hesketh, S. R., & Daehler, K. R.
-# (2010). Learning Science for Teaching: Effects of Professional Development on
-# Elementary Teachers, Classrooms, and Students. Society for Research on
-# Educational Effectiveness.
-#
-# https://files.eric.ed.gov/fulltext/ED514193.pdf
 
 ggplot( dat, aes( gain ) ) +
     facet_wrap( ~ Tx ) +
@@ -77,59 +50,100 @@ cdat = filter( dat, TxAny == 0 ) # Get standardized outcome
 EstTx = 0.65
 TxVar = 0.5
 R = 100
-percentile = 0.95
 
 s_list = c( 2, 3, 4, 5, 6, 8, 10, 15, 20 )
 
-checks = expand_grid( percentile = c( 0.95, 0.99 ),
-                      TxVar = c( 0.5, 1.0 ),
+checks = expand_grid( TxVar = c( 0.5, 1.0 ),
                       tx_dist = c( "constant", "rexp", "rnorm" ) )
 checks
 
+# Calculate power across a range of scenarios.
 cat( "Number of scenarios: ", nrow(checks), "\n" )
-checks$data = pmap( checks, function( percentile, TxVar, tx_dist ) {
-    cat( glue::glue("Running {percentile} {TxVar} {tx_dist}\n" ) )
+checks$data = pmap( checks, function( TxVar, tx_dist ) {
+    cat( glue::glue("Running {TxVar} {tx_dist}\n" ) )
     explore_stephenson_s( s = s_list,
                           n = nrow( dat ),
                           Y0_distribution = cdat$std_gain,
-                          percentile = percentile,
                           tx_function = tx_function_factory(tx_dist,
                                                             ATE = EstTx, tx_scale=TxVar),
-                          R = R, calc_ICC = TRUE, parallel = TRUE )
+                          R = R, calc_ICC = TRUE, parallel = TRUE,
+                          targeted_power = FALSE, k.vec = (233-35):233 )
 } )
 checks
 s_selector = unnest( checks, cols = "data" )
 
+s_selector
+saveRDS( s_selector, here::here( "demo_code/heller_s_check_results.rds" ) )
 
+s_selector = readRDS( here::here( "demo_code/heller_s_check_results.rds" ) )
 
-# Make plot of power curves
+# Make plot of power curves to see what s is best
 s_selector <- s_selector %>%
     mutate( range = round( pow_h - pow_l, digits = 2 ),
             txd = as.numeric(as.factor(tx_dist)) - 2,
             s_adj = s * 1.05^txd )
 s_selector
 
-avg = s_selector %>% group_by( s ) %>%
+n_units = nrow(dat)
+s_selector
+s_selector = mutate( s_selector,
+                     group = ifelse( k >= n_units - 5, "high",
+                                     ifelse( k >= n_units - 15, "med", "low" ) ) ) %>%
+    mutate( group = factor( group, levels = c( "high", "med", "low" ) ) )
+table( s_selector$group )
+
+table( s_selector$tx_dist )
+avg = s_selector %>% group_by( s, group ) %>%
     summarise( power = mean( power ) ) %>%
     rename( s_adj = s )
 avg
 
+s_selector <- s_selector %>%
+    mutate( tx_dist = fct_recode(tx_dist,
+                                 exponential = "rexp",
+                                 normal = "rnorm" ) )
+
+library( ggthemes )
+my_t = theme_tufte() + theme( legend.position="bottom",
+                              legend.direction="horizontal", legend.key.width=unit(1,"cm"),
+                              panel.border = element_blank() )
+theme_set( my_t )
 ggplot( s_selector, aes( s_adj, power, col=tx_dist ) ) +
-    facet_grid( percentile ~ TxVar, labeller = label_both ) +
+    #facet_grid(  group ~ TxVar, labeller = label_both ) +
+    facet_wrap( ~ group, nrow = 1 ) +
     geom_hline(yintercept = 0.80, lty = 2 ) +
-    geom_point() +
-    geom_errorbar( aes( ymax = power + 2*SEpower,
-                        ymin = power - 2*SEpower ),
-                   width = 0 ) +
+#    geom_point() +
+   # geom_errorbar( aes( ymax = power + 2*SEpower,
+#                        ymin = power - 2*SEpower ),
+ #                  width = 0 ) +
     geom_smooth( se = FALSE, span = 1 ) +
     labs( x = "s", y = "Power" ) +
     scale_x_log10( breaks = unique( s_selector$s ) ) +
     geom_line( data = avg, col="black" ) +
     coord_cartesian( ylim=c(0,1) ) +
-    theme_minimal()
+    theme_minimal() +
+    labs( col = "distribution:" ) +
+    my_t
+ggsave( filename = "demo_code/s_selector.pdf", width = 8, height = 3 )
+
+avg %>% ungroup() %>%
+    group_by( group ) %>%
+    filter( power == max(power) )
 
 
-avg %>% filter( power == max(power) )
+# Looking at number of units
+s_num_n <- s_selector %>% group_by( s, TxVar, tx_dist ) %>%
+    summarise( n = mean( n ) )
+
+ggplot( s_num_n, aes( s, n, col=as.factor(TxVar) ) ) +
+    geom_smooth( se=FALSE )
+
+# For number of significant units...
+s_num_n %>% group_by( TxVar,tx_dist ) %>%
+    filter( n == max(n) )
+
+
+
 
 #### Analysis with the chosen test statistic  #####
 

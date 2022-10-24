@@ -51,12 +51,16 @@ the rank sum statistic.}
 }
 \value{
 Small tibble with statistics of the power calculation (true
-effect being tested, power to detect, sample size, etc.).  sd_Y0, sd_Y1, sd_tau
-are the standard deviations of the potential outcomes and individual treatment impacts, and r
-is the correlation of Y0 and the treatment effects.
+effect being tested, power to detect, sample size, etc.).  sd_Y0,
+sd_Y1, sd_tau are the standard deviations of the potential
+outcomes and individual treatment impacts, and r is the
+correlation of Y0 and the treatment effects.
 }
 \description{
 Given a fixed schedule of potential outcomes and a proportion to
 assign to treatment, calculate (via simulation) the power to detect
 a given quantile effect for that specific dataset.
+}
+\seealso{
+calc_CI_precision_finite
 }

@@ -109,11 +109,13 @@ generate_finite_data <- function( n,
 #' @param c Threshold for null (see pval_quantile)
 #'
 #' @return Small tibble with statistics of the power calculation (true
-#'   effect being tested, power to detect, sample size, etc.).  sd_Y0, sd_Y1, sd_tau
-#'   are the standard deviations of the potential outcomes and individual treatment impacts, and r
-#'   is the correlation of Y0 and the treatment effects.
+#'   effect being tested, power to detect, sample size, etc.).  sd_Y0,
+#'   sd_Y1, sd_tau are the standard deviations of the potential
+#'   outcomes and individual treatment impacts, and r is the
+#'   correlation of Y0 and the treatment effects.
 #'
 #' @import tibble
+#' @seealso calc_CI_precision_finite
 #' @export
 calc_power_finite <- function( Y0, tau, p_tx, R = 100,
                                percentile = 1,
@@ -123,7 +125,7 @@ calc_power_finite <- function( Y0, tau, p_tx, R = 100,
                                method.list = list(name = "Stephenson", s = 10),
                                score = NULL,
                                stat.null = NULL,
-                               nperm = 1000) {
+                               nperm = 1000 ) {
     n = length(Y0)
     stopifnot( percentile >= 0 && percentile <= 1 )
     k = round( percentile * n )
@@ -139,6 +141,9 @@ calc_power_finite <- function( Y0, tau, p_tx, R = 100,
                        stat.null = stat.null,
                        nperm = nperm,
                        switch = FALSE )
+
+
+
     } )
     rps = unlist(rps)
     true_tau = sort(tau)[k]
@@ -154,23 +159,175 @@ calc_power_finite <- function( Y0, tau, p_tx, R = 100,
 
 
 
-#' Explore power across a range of s values
+#' Summarize set of power simulation results
+#'
+#' Summarize the simulation to compare the performance of various
+#' Stephenson rank statistics.
+#'
+#' Calculates three types of precision.  First, we compare the average
+#' confidence limits for the number of units with effects passing the
+#' threshold cutoff 'c' (default of 0). We also calculate the median
+#' confidence limits for the individual treatment effect for all
+#' ranks. Finally, we compare the power for testing whether the
+#' individual treatment effect passes the threshold cutoff for each
+#' rank.
+#'
+#' @param result A tibble with one row for each quantile in the result object passed.
+
+#' @param alternative A character takes value "greater" and "less",
+#'   indicating the direction of alternative hypotheses.
+#' @param c A numerical object specifying the cutoff.
+#' @param quantile_n_CI Quantile of the distribution of lower
+#'   confidence limits for the number of significant units.  Default
+#'   is 0.5 (median) reporting the median size of the confidence
+#'   interval for number of significant units.
+#'
+#' @export
+summary_power_results <- function(result,
+                                  alternative = "greater",
+                                  c = 0,
+                                  quantile_n_CI = 0.50 ) {
+
+    if ( alternative == "greater") {
+        n <- colSums( result > c )
+        pows <- apply( result > c, 1, mean )
+        cis <- apply( result, 1, median )
+    } else {
+        n <- colSums( result < c )
+
+        powe <- apply( result < c, 1, mean )
+        cis <- apply( result, 1, median )
+    }
+    res <- tibble( k = as.numeric( rownames(result) ),
+                   power = pows,
+                   q_ci = cis,
+                   n = quantile( n, quantile_n_CI ) )
+
+    return( res )
+
+}
+
+
+
+
+
+
+
+#' Calculate properties of all confidence intervals for a
+#' finite-sample dataset.
+#'
+#' Given a fixed schedule of potential outcomes and a proportion to
+#' assign to treatment, calculate (via simulation) the distribution of
+#' all the confidence intervals.
+#'
+#' This method will estimate (via simulation) the distributions all
+#' simultaneous confidence intervals that can then be post processed
+#' to determine their variability, and also the CI for the number of
+#' positive units, etc.
+#'
+#' @inheritParams calc_power_finite
+#' @param k.vec The vector of quantiles to investigate.  NULL means
+#'   all.
+#' @param summarise TRUE means summarise simulation results, FALSE
+#'   means return the raw matrix of CIs.
+#' @param quantile_n_CI What quantile of the distribution of number of
+#'   significant units should be reported?
+#' @param c Threshold for testing, if summarizing results.
+#' @return If summarise = FALSE, Matrix with each column being a
+#'   simulation run and each row being a quantile, with the listed
+#'   confidence interval limit for each entry.  Otherwise a tibble
+#'   with a row for each quantile specified in k.vec.  The "n" column
+#'   is a repeated value of the median number of quantiles found
+#'   significant across simulations.
+#'
+#' @seealso calc_power_finite
+#'
+#' @export
+calc_CI_precision_finite <- function( Y0, tau, p_tx, R = 100,
+                                      k.vec = NULL,
+                                      alpha = 0.05,
+                                      alternative = "greater",
+                                      method.list = list(name = "Stephenson", s = 10),
+                                      score = NULL,
+                                      stat.null = NULL,
+                                      nperm = 1000,
+                                      c = 0,
+                                      quantile_n_CI = 0.50,
+                                      summarise = TRUE ) {
+
+    n = length(Y0)
+    stopifnot( length(tau) == n )
+
+    if ( is.null( stat.null ) ) {
+        stat.null = null_dist(n, floor( n * p_tx ), method.list = method.list, nperm = nperm )
+    }
+
+    rps = rerun( R, {
+        Z = as.numeric( sample(n) <= p_tx * n )
+
+        Yobs = Y0 + ifelse( Z, tau, 0 )
+        ci_quantile( Z, Yobs, k.vec = k.vec,
+                     alternative = alternative,
+                     method.list = method.list,
+                     score = score,
+                     stat.null = stat.null,
+                     nperm = nperm,
+                     switch = FALSE )
+    } )
+
+    r = bind_rows( rps )
+    res <- NULL
+    if ( alternative == "greater" ) {
+        res <- matrix( r$lower, ncol = R )
+    } else {
+        res <- matrix( r$upper, ncol = R )
+    }
+
+    if ( is.null(k.vec) ) {
+        rownames(res) = 1:nrow(res)
+    } else {
+        rownames(res) = k.vec
+    }
+
+    if ( summarise ) {
+        return( summary_power_results( res, alternative = alternative,
+                                       quantile_n_CI = quantile_n_CI, c = c ) )
+    } else {
+        return( res )
+    }
+}
+
+
+
+
+#' Explore power and precision across a range of s values
 #'
 #' Conduct power simulation against specific finite-sample dataset to
 #' see how power changes as a function of s.
 #'
-#' @param s Numeric list of s values to test using the Stephenson rank.
-#' @param stat.nulls Optional list of the precomputed null distributions of the statistics.
+#' @param s Numeric list of s values to test using the Stephenson
+#'   rank.
+#' @param stat.nulls Optional list of the precomputed null
+#'   distributions of the statistics.
+#' @param k.vec Which quantiles to examine (if targeted_power =
+#'   FALSE).  See calc_CI_precision_finite.
+#' @param targeted_power TRUE means focus on passed percentile and
+#'   calculate power for that specific quantile.  FALSE means
+#'   calculate simultenaous confidence intervals for all quantiles,
+#'   leaving power caculation to post-simulation exploration.
 #' @import dplyr
 #' @export
 explore_stephenson_s_finite <- function( s = c(2,5,10,30),
                                          Y0, tau, p_tx, R = 100,
                                          percentile = 1,
+                                         k.vec = NULL,
                                          alpha = 0.05,
                                          c = 0,
+                                         quantile_n_CI = 0.50,
                                          alternative = "greater",
                                          stat.nulls = NULL,
-                                         nperm = 1000 ) {
+                                         nperm = 1000,
+                                         targeted_power = TRUE ) {
     n = length(Y0)
     stopifnot( n == length( tau ) )
     stopifnot( p_tx*n >= 1 && p_tx*n <= n-1 )
@@ -179,22 +336,32 @@ explore_stephenson_s_finite <- function( s = c(2,5,10,30),
         names(stat.nulls) = s
     }
 
-    rs = map_df( s, function( ss ) {
-        sn = NULL
-        if ( !is.null(stat.nulls) ) {
-            sn = stat.nulls[[ as.character(ss) ]]
-        }
-        calc_power_finite( Y0 = Y0, tau = tau, p_tx = p_tx, R = R,
-                           percentile = percentile,
-                           alpha = alpha, c = c,
-                           method.list = list(name = "Stephenson", s = ss),
-                           alternative = alternative,
-                           stat.null = sn, nperm = nperm )
-    } )
+    rs = s %>% set_names(s) %>%
+        map_df( function( ss ) {
+            sn = NULL
+            if ( !is.null(stat.nulls) ) {
+                sn = stat.nulls[[ as.character(ss) ]]
+            }
+            if ( targeted_power ) {
+                calc_power_finite( Y0 = Y0, tau = tau, p_tx = p_tx, R = R,
+                                   percentile = percentile,
+                                   alpha = alpha, c = c,
+                                   method.list = list(name = "Stephenson", s = ss),
+                                   alternative = alternative,
+                                   stat.null = sn, nperm = nperm )
+            } else {
+                calc_CI_precision_finite( Y0 = Y0, tau = tau, p_tx = p_tx, R = R,
+                                          alpha = alpha, c = c, k.vec = k.vec,
+                                          method.list = list(name = "Stephenson", s = ss),
+                                          alternative = alternative,
+                                          quantile_n_CI = quantile_n_CI,
+                                          stat.null = sn, nperm = nperm, summarise = TRUE )
+            }
+        }, .id="s" )
 
-    rs$s = s
-    #dplyr::select( rs, s, power )
-    rs
+    rs$s = as.numeric(rs$s)
+
+    return( rs )
 }
 
 
@@ -225,10 +392,10 @@ calc_power_ICC <- function( rps, iter_per_set ) {
                     family=binomial )
         #display( M1 )
         V = VarCorr( M1 )$gid[1,1]
+        V = round( V, digits = 4 )
         ICC =  V / ( V + pi^(2/3) )
-        ICC
         rng = boot::inv.logit( fixef(M1)[[1]] + c( -sqrt(V), sqrt(V) ) )
-
+        ICC = round( ICC, digits = 4 )
         tibble( ICC = ICC,
                 pow_l = rng[[1]],
                 pow_h = rng[[2]] )
@@ -325,6 +492,8 @@ if ( FALSE ) {
 #' Conduct power simulation against a specific data generating process to
 #' see how power changes as a function of s in that scenario.
 #'
+#' @inheritParams explore_stephenson_s_finite
+#'
 #' @param s Numeric list of s values to test using the Stephenson rank.
 #' @import tidyverse
 #' @import future
@@ -340,6 +509,9 @@ explore_stephenson_s <- function( s = c(2,5,10,30),
                                   percentile = 1,
                                   alpha = 0.05,
                                   c = 0,
+                                  k.vec = NULL,
+                                  quantile_n_CI = 0.50,
+                                  targeted_power = TRUE,
                                   alternative = "greater",
                                   nperm = 1000,
                                   parallel = FALSE,
@@ -370,10 +542,12 @@ explore_stephenson_s <- function( s = c(2,5,10,30),
                                      p_tx = p_tx,
                                      R = Rint,
                                      percentile = percentile, alpha = alpha,
-                                     c = c,
+                                     c = c, k.vec = k.vec,
+                                     quantile_n_CI = quantile_n_CI,
                                      alternative = alternative,
                                      stat.nulls = stat.null.all,
-                                     nperm = nperm )
+                                     nperm = nperm,
+                                     targeted_power = targeted_power )
     }
 
     n_blocks = round( R / iter_per_set )
@@ -396,32 +570,75 @@ explore_stephenson_s <- function( s = c(2,5,10,30),
     }
     rps <- bind_rows( rps, .id = "gid" )
 
-    aggrps <- rps %>% group_by( s ) %>%
-        summarise( EvarY0 = mean( sd_Y0^2 ),
-                   EvarY1 = mean( sd_Y1^2 ),
-                   Evartau = mean( sd_tau^2 ),
-                   Er = mean( r ),
-                   SEpower = sd( power ) / sqrt( n() ),
-                   power = mean( power ) ) %>%
-        relocate( SEpower, .after = power )
+    if ( targeted_power ) {
+        aggrps <- rps %>% group_by( s ) %>%
+            summarise( EvarY0 = mean( sd_Y0^2 ),
+                       EvarY1 = mean( sd_Y1^2 ),
+                       Evartau = mean( sd_tau^2 ),
+                       Er = mean( r ),
+                       SEpower = sd( power ) / sqrt( n() ),
+                       power = mean( power ) ) %>%
+            relocate( SEpower, .after = power )
 
-    if ( calc_ICC ) {
-        rpg = rps %>% group_by( s ) %>% nest()
-        mods = rpg$data %>%
-            set_names(rpg$s) %>%
-            map_df( calc_power_ICC,
-                    iter_per_set = iter_per_set,
-                    .id = "s" ) %>%
-            mutate( s = as.numeric( s ) )
+        if ( calc_ICC ) {
+            rpg = rps %>% group_by( s ) %>% nest()
+            mods = rpg$data %>%
+                set_names(rpg$s) %>%
+                map_df( calc_power_ICC,
+                        iter_per_set = iter_per_set,
+                        .id = "s" ) %>%
+                mutate( s = as.numeric( s ) )
 
-        aggrps <- left_join( aggrps, mods, by="s" )
+            aggrps <- left_join( aggrps, mods, by="s" )
+        }
+    } else {
+        aggrps <- rps %>% group_by( s, k ) %>%
+            summarise( SEpower = sd( power ) / sqrt( n() ),
+                       power = mean( power ),
+                       q_ci = mean( q_ci ),
+                       n = median( n ) ) %>%
+            relocate( SEpower, .after = power )
+        aggrps$s = as.numeric( aggrps$s )
+        aggrps$k = as.numeric( aggrps$k )
+
+        if ( calc_ICC ) {
+            rpg = rps %>% group_by( s, k ) %>% nest()
+            mods = rpg$data %>%
+                map_df( calc_power_ICC,
+                        iter_per_set = iter_per_set )
+            mods$s = rpg$s
+            mods$k = rpg$k
+            aggrps <- left_join( aggrps, mods, by=c( "s", "k" ) )
+        }
     }
+
 
     aggrps
 }
 
 
+
+
+
+
+
+#### Testing code ####
+
 if ( FALSE ) {
+
+    library( tidyverse )
+    library( RIQITE )
+    dat = generate_finite_data( n = 100,
+                                Y0_distribution = rnorm )
+    dat
+
+    result = calc_CI_precision_finite( dat$Y0, dat$tau, 0.5, R = 10 )
+
+
+    Y0 = dat$Y0
+    tau = dat$tau
+
+
     ess = explore_stephenson_s( s = c( 2, 5, 10 ),
                                 n = 500,
                                 tx_function = tx_function_factory("rexp"),

@@ -66,7 +66,7 @@ assign_CRE <- function(n, m, nperm){
 #'   invariant under treatment assignment).  If null will generate from the
 #'   passed method.list and given n, m.
 #'
-#'
+#' @export
 null_dist <- function(n, m, method.list = NULL, score = NULL, nperm = 10^5, Z.perm = NULL){
   if(is.null(score)){
     score = rank_score( n, method.list )
@@ -127,7 +127,9 @@ min_stat <- function(Z, Y, k, c, method.list = NULL, score = NULL, ind.sort.trea
 
 
 ### p-val for testing tau_{(k)} <= c ###
-pval_H_k_c <- function(Z, Y, k, c, method.list = NULL, score = NULL, stat.null = NULL, nperm = 10^5, Z.perm = NULL, ind.sort.treat = NULL){
+pval_H_k_c <- function(Z, Y, k, c,
+                       method.list = NULL, score = NULL, stat.null = NULL,
+                       nperm = 10^5, Z.perm = NULL, ind.sort.treat = NULL){
   n = length(Z)
   m = sum(Z)
 
@@ -340,7 +342,8 @@ conf_quant_larger <- function( Z, Y, k.vec = NULL, method.list = NULL, score = N
 #' @return The p-value for testing the specified null hypothesis of
 #'   interest.
 #' @export
-pval_quantile <- function(Z, Y, k, c, alternative = "greater",
+pval_quantile <- function(Z, Y, k,
+                          c, alternative = "greater",
                           method.list = list( name = "Stephenson", s = 10 ),
                           score = NULL, stat.null = NULL, nperm = 10^6, Z.perm = NULL,
                           switch = TRUE ){
