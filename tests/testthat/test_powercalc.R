@@ -105,7 +105,7 @@ test_that( "Explore s works", {
     esses = c( 2, 4, 5, 7, 10, 30 )
     ess = explore_stephenson_s( s = esses,
                                 n = 500,
-                                tx_function = tx_function_factory("rexp"),
+                                tx_function = "rexp",
                                 p_tx = 0.5,
                                 R = 30 )
     expect_true( nrow( ess ) == 6 )
@@ -119,7 +119,7 @@ test_that( "Explore s with CI approach works", {
     esses = c( 2, 5, 10 )
     ess = explore_stephenson_s( s = esses,
                                 n = 100,
-                                tx_function = tx_function_factory("rexp"),
+                                tx_function = "rexp",
                                 p_tx = 0.5, c = -1,
                                 nperm = 200,
                                 R = 100, k.vec = 95:100, targeted_power = FALSE, calc_ICC = TRUE )
@@ -154,8 +154,8 @@ test_that( "Explore s for emperical data works", {
     ess = explore_stephenson_s( s = esses,
                                 n = 50,
                                 Y0_distribution = Y0,
-                                tx_function = tx_function_factory("rexp",
-                                                                  ATE = 0.50),
+                                tx_function = "rexp",
+                                ATE = 0.50,
                                 p_tx = 0.5,
                                 R = 1000, iter_per_set = 50,
                                 calc_ICC = TRUE )

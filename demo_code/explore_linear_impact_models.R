@@ -1,18 +1,24 @@
 
 
 
-# Comparing different linear models with same marginal variance
+# Comparing finite population and superpopulation performance
+# different linear models with same marginal variance but different
+# correlations of potential outcomes.
+#
+#
 
 
 library( tidyverse )
 library( RIQITE )
 
+#### Example 1: Positive rho (perfect correlation)  ####
+#
 # rho = 1, omega = 1
 # Y(1) variation is (1+1)^2 + 1 = 5
 
 N = 150
 
-# single giant dataset
+# Make a single giant dataset to get summary statistics
 dat = generate_finite_data( 20000,
                             tx_function = tx_function_factory("linear", ATE = 0.0, rho = 1, tx_scale = 1) )
 dat
@@ -21,6 +27,8 @@ var( dat$tau )
 var( dat$Y0 + dat$tau )
 cor( dat$Y0, dat$tau )
 
+
+# See how power works on the first N observations (smaller dataset)
 explore_stephenson_s_finite(  Y0 = dat$Y0[1:N], tau = dat$tau[1:N],
                               s = c( 2, 5, 20 ),
                               p_tx = 1/3 )
@@ -45,7 +53,7 @@ essA
 
 
 
-## Example 2: Negative rho
+#### Example 2: Negative rho ####
 
 # rho = -1, omega = sqrt(5)
 # Y(1) variation is (1+-1)^2 + 5 = 5
@@ -69,7 +77,8 @@ essB = explore_stephenson_s( s = c( 2, 5, 20 ),
 essB
 
 
-## Example 3: 0 rho
+
+#### Example 3: 0 rho ####
 
 # rho = 0, omega = sqrt(4) = 2
 dat3 = generate_finite_data( 20000,
@@ -91,7 +100,7 @@ essC = explore_stephenson_s( s = c( 2, 5, 20 ),
 essC
 
 
-## Table of results
+#### Table of results ####
 
 bind_rows( A = essA, B = essB, C = essC, .id = "scenario" ) %>%
     filter( s == 5 ) %>%

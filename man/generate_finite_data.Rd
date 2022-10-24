@@ -4,11 +4,7 @@
 \alias{generate_finite_data}
 \title{Generate data for power simulation}
 \usage{
-generate_finite_data(
-  n,
-  Y0_distribution = rnorm,
-  tx_function = tx_function_factory("constant")
-)
+generate_finite_data(n, Y0_distribution = rnorm, tx_function = "constant", ...)
 }
 \arguments{
 \item{n}{Sample size to test}
@@ -18,8 +14,12 @@ values, or a list of discrete values to bootstrap sample from
 (with replacement).  Function takes single parameter of sample
 size. Default is normal.}
 
-\item{tx_function}{Function that takes Y0 and returns a set of
-treatment effects.  Default is tx_constant.}
+\item{tx_function}{Either a string name of an implemented
+distribution (rexp, rnorm, linear, etc.) or a function that takes
+Y0 and returns a set of treatment effects.  Default is a constant tx effect.
+tx_constant.}
+
+\item{...}{Extra parameters to generate treatment impacts with.}
 }
 \value{
 Tibble (dataframe) with two columns, one of Y0s and one

@@ -44,7 +44,7 @@ dat %>% group_by( TxAny ) %>%
 summary( lm( std_gain ~ TxAny, data=dat ) )
 
 
-#### Using our checker to check for best test statistic  ####
+#### Select best test s-value for test statistic  ####
 
 cdat = filter( dat, TxAny == 0 ) # Get standardized outcome
 EstTx = 0.65
@@ -54,18 +54,19 @@ R = 100
 s_list = c( 2, 3, 4, 5, 6, 8, 10, 15, 20 )
 
 checks = expand_grid( TxVar = c( 0.5, 1.0 ),
-                      tx_dist = c( "constant", "rexp", "rnorm" ) )
-checks
+                      tx_dist = c( "constant", "rexp", "rnorm" ),
+                      rho = c( -0.5, 0, 0.5 ) )
+checks = filter( checks, rho == 0 | tx_dist != "constant" )
 
 # Calculate power across a range of scenarios.
 cat( "Number of scenarios: ", nrow(checks), "\n" )
-checks$data = pmap( checks, function( TxVar, tx_dist ) {
-    cat( glue::glue("Running {TxVar} {tx_dist}\n" ) )
+checks$data = pmap( checks, function( TxVar, tx_dist, rho ) {
+    cat( glue::glue("Running {TxVar} {tx_dist} rho={rho}\n" ) )
     explore_stephenson_s( s = s_list,
                           n = nrow( dat ),
                           Y0_distribution = cdat$std_gain,
                           tx_function = tx_function_factory(tx_dist,
-                                                            ATE = EstTx, tx_scale=TxVar),
+                                                            ATE = EstTx, tx_scale=TxVar, rho = rho ),
                           R = R, calc_ICC = TRUE, parallel = TRUE,
                           targeted_power = FALSE, k.vec = (233-35):233 )
 } )

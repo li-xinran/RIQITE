@@ -8,7 +8,7 @@ explore_stephenson_s(
   s = c(2, 5, 10, 30),
   n,
   Y0_distribution = rnorm,
-  tx_function = tx_function_factory("constant"),
+  tx_function = "constant",
   p_tx = 0.5,
   R = 100,
   iter_per_set = 10,
@@ -22,7 +22,8 @@ explore_stephenson_s(
   nperm = 1000,
   parallel = FALSE,
   calc_ICC = FALSE,
-  verbose = FALSE
+  verbose = FALSE,
+  ...
 )
 }
 \arguments{

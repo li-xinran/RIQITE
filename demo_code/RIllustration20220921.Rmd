@@ -88,9 +88,9 @@ cat(paste(
   ))
 ```
 
-We then perform the randomization test for the bounded null $H_{\le 0}$ on the monotonicity of the instrument. Specifically, we consider three randomization tests using the difference-in-means statistic, Wilcoxon rank sum statistic and Stephenson rank sum statistic with the parameter $s=10$, respectively. We also conduct the classical Student's t-test. These produce Table 1 in the paper.
+We then perform the randomization test for the bounded null $H_{\le 0}$ on the monotonicity of the instrument. Specifically, we consider three randomization tests using the difference-in-means statistic, Wilcoxon rank sum statistic and Stephenson rank sum statistic with the parameter $s=10$, respectively. We also conduct the classical Student's $t$-test. These produce Table 1 in the paper.
 
-```{r p value for bounded null}
+```{r p value for bounded null, cache=TRUE}
 data$Z = as.numeric( data$BirthMonth == "Dec" )
 data$Y = data$EntryAge
 n <- length(data$Z)
@@ -103,7 +103,7 @@ Z.perm <- assign_CRE(n, m, nperm)
 # difference-in-means
 pval.dim <- pval_bound(Z=data$Z, Y=data$Y, c=0, method.list=list(name = "DIM"), 
                      alternative = "greater", Z.perm=Z.perm, impute="control")
-ci.dim<-ci_bound(Z=data$Z, Y=data$Y, alternative="greater", method.list=list(name="DIM"), 
+ci.dim <- ci_bound(Z=data$Z, Y=data$Y, alternative="greater", method.list=list(name="DIM"), 
                         Z.perm=Z.perm, impute="control", alpha=0.10)
 
 # Wilcoxon rank sum
@@ -166,37 +166,143 @@ hist(electric_teachers$gain[electric_teachers$TxAny==0],
      freq = FALSE, add = TRUE, breaks = 20, col = NULL)
 ```
 
-We first test the bounded null hypothesis that all individual effects are non-positive. 
+
+## Determining an s-value for the test statistic
+
+We plan on using a Stephenson's Rank Sum test, but need to determine an appropriate value of $s$.
+We first conduct a sensitivity analysis across a range of scenarios to determine which $s$ have the highest amount of power for the  top 5 quantiles, the next 10 quantiles, and the next 15 quantiles.
+
+We first get the empirical distribution of the control outcomes, and make a grid of all scenarios to explore:
 ```{r}
+cdat = filter( dat, TxAny == 0 ) # Get standardized outcome
+EstTx = 0.65
+TxVar = 0.5
+R = 100
+s_list = c( 2, 3, 4, 5, 6, 8, 10, 15, 20 )
+
+checks = expand_grid( TxVar = c( 0.5, 1.0 ),
+                      tx_dist = c( "constant", "rexp", "rnorm" ),
+                      rho = c( -0.5, 0, 0.5 ) )
+checks = filter( checks, rho == 0 | tx_dist != "constant" )
+```
+
+This gives `r nrow(checks)` scenarios. We use `pmap()` to run `explore_stephenson_s` across them.
+The `explore_stephenson_s()` function will repeatedly generate datasets and analyze them, and then return a summary of the results. We focus on the top 35 quantiles.
+
+```{r secret_simulation_block, include=FALSE}
+if ( !file.exists( here::here( "demo_code/heller_s_check_results.rds" ) ) ) {
+    checks$data = pmap( checks, function( TxVar, tx_dist, rho ) {
+    cat( glue::glue("Running {TxVar} {tx_dist} {rho}\n" ) )
+    explore_stephenson_s( s = s_list,
+                          n = nrow( dat ),
+                          Y0_distribution = cdat$std_gain,
+                          tx_function = tx_function_factory(tx_dist,
+                                                            ATE = EstTx, tx_scale=TxVar, rho = rho ),
+                          R = R, calc_ICC = TRUE, parallel = TRUE,
+                          targeted_power = FALSE, k.vec = (233-35):233 )
+} )
+    s_selector = unnest( checks, cols = "data" )
+
+saveRDS( s_selector, here::here( "demo_code/heller_s_check_results.rds" ) )
+} else {
+    s_selector = readRDS( here::here( "demo_code/heller_s_check_results.rds" ) )
+
+}
+```
+
+```{r demo_simulation_code_block, eval=FALSE}
+checks$data = pmap( checks, function( TxVar, tx_dist, rho ) {
+    cat( glue::glue("Running {TxVar} {tx_dist} {rho}\n" ) )
+    explore_stephenson_s( s = s_list,
+                          n = nrow( dat ),
+                          Y0_distribution = cdat$std_gain,
+                          tx_function = tx_function_factory(tx_dist,
+                                                            ATE = EstTx, tx_scale=TxVar, rho = rho ),
+                          R = R, calc_ICC = TRUE, parallel = TRUE,
+                          targeted_power = FALSE, k.vec = (233-35):233 )
+} )
+checks
+s_selector = unnest( checks, cols = "data" )
+```
+
+We can then aggregate our findings and see what $s$ provides greatest power across a range of quantile groups:
+```{r}
+n_units = nrow(dat)
+s_selector = mutate( s_selector,
+                     group = ifelse( k >= n_units - 5, "high",
+                                     ifelse( k >= n_units - 15, "med", "low" ) ) ) %>%
+    mutate( group = factor( group, levels = c( "high", "med", "low" ) ) )
+
+avg = s_selector %>% group_by( s, group ) %>%
+    summarise( power = mean( power ), .groups="drop" )
+avg
+
+ggplot( s_selector, aes( s, power ) ) +
+    facet_wrap( ~ group, nrow = 1 ) +
+    geom_hline( yintercept = 0.80, lty = 2 ) +
+    geom_smooth( aes( col=tx_dist ), method = "loess", se = FALSE, 
+                 span = 1, lwd= 0.5 ) +
+    labs( x = "s", y = "Power" ) +
+    scale_x_log10( breaks = unique( s_selector$s ) ) +
+    coord_cartesian( ylim=c(0,1) ) +
+    theme_minimal() + 
+    geom_point( data = avg, col="black", size=2 )
+```
+
+We identify best $s$ as follows:
+```{r}
+avg %>% ungroup() %>%
+    group_by( group ) %>%
+    filter( power == max(power) )
+```
+
+We can also select $s$ based on which $s$ will give the most units, in general, with significant intervals:
+```{r}
+s_num_n <- s_selector %>% 
+    group_by( s, TxVar, tx_dist ) %>%
+    summarise( n = mean( n ) )
+
+s_num_n %>% group_by( TxVar, tx_dist ) %>%
+    filter( n == max(n) )
+```
+    
+Across these results, $s = 5$ looks like a reasonable choice.
+
+
+## Analyzing the data
+
+With our selected $s$ in hand, we first test the bounded null hypothesis that all individual effects are non-positive. 
+```{r, cache=TRUE}
 nperm = 10^4
-pval.steph10 <- pval_quantile(Z=electric_teachers$TxAny, Y=electric_teachers$gain, 
+pval.steph5 <- pval_quantile(Z=electric_teachers$TxAny, Y=electric_teachers$gain, 
                               k=n, c=0, alternative = "greater", 
-                              method.list=list(name="Stephenson", s=10), nperm=nperm )
-pval.steph10 # final p-value
+                              method.list=list(name="Stephenson", s=5), nperm=nperm )
+pval.steph5 # final p-value
 ```
 
 
+We then conduct inference for all quantiles of individual treatment effects. The following figures show the 90% lower confidence limits for all quantiles of individual effects using Stephenson rank statistics with s = 5 and s = 2 (i.e., Wilcoxon rank), respectively. 
 
-We then conduct inference for all quantiles of individual treatment effects. The following figures show the 90% lower confidence limits for all quantiles of individual effects using Stephenson rank statistics with s = 10 and s = 2 (i.e., Wilcoxon rank), respectively. 
 ```{r, fig.height = 4, fig.width = 6.4, fig.align = "center"}
-ci10 = ci_quantile( Z=electric_teachers$TxAny, Y=electric_teachers$gain, alternative="greater", 
-                  method.list=list( name="Stephenson", s=10 ), nperm=nperm, alpha=0.10 )
+ci5 = ci_quantile( Z=electric_teachers$TxAny, Y=electric_teachers$gain, alternative="greater", 
+                  method.list=list( name="Stephenson", s=5 ), nperm=nperm, alpha=0.10 )
 ci2 = ci_quantile( Z=electric_teachers$TxAny, Y=electric_teachers$gain, alternative="greater", 
                   method.list=list( name="Stephenson", s=2 ), nperm=nperm, alpha=0.10 )
 par(mfrow = c(1, 2))
-plot_quantile_CIs(ci10, k_start = 102, main = "s=10" )
+plot_quantile_CIs(ci5, k_start = 102, main = "s=5" )
 plot_quantile_CIs(ci2, k_start = 102, main = "s=2" )
 ```
 
-Finally, we infer the effect range.
-```{r}
+Finally, we infer the effect range by conducting two tests, one for greater and one for less.  We then can say that there are effects at least as small as some value and at least as large as another.
+```{r, cache=TRUE}
 tau.max.lower = ci_quantile( Z=electric_teachers$TxAny, Y=electric_teachers$gain, k.vec=n, alternative="greater", 
-              method.list=list( name="Stephenson", s=10 ), nperm=nperm, alpha=0.05 )$lower
+              method.list=list( name="Stephenson", s=5 ), nperm=nperm, alpha=0.05 )$lower
 tau.min.upper = ci_quantile( Z=electric_teachers$TxAny, Y=electric_teachers$gain, k.vec=1, alternative="less", 
-              method.list=list( name="Stephenson", s=10 ), nperm=nperm, alpha=0.05 )$upper
+              method.list=list( name="Stephenson", s=5 ), nperm=nperm, alpha=0.05 )$upper
 max(0, tau.max.lower - tau.min.upper)
 ```
 
+In this case, we have no evidence of effect heterogeniety (all the effects could be the same).
 
 ```{r, include=FALSE}
 save.image("Develop20220921.RData") # save the analysis result
@@ -233,7 +339,7 @@ hist(dat$change[dat$group=="control"], freq=FALSE, add=TRUE, breaks=10, col=NULL
 ```
 
 We infer the lower confidence limits for all quantiles of individual treatment effects. The following two figures show the 90% lower confidence limits for all quantiles of individual effects using Stephenson rank statistics with s = 6 and s = 2 (i.e., Wilcoxon rank), respectively
-```{r, fig.height = 4, fig.width = 6.4, fig.align = "center"}
+```{r, fig.height = 4, fig.width = 6.4, fig.align = "center", cache=TRUE}
 nperm = 10^5
 ci6 = ci_quantile( Z=as.numeric(dat$group == "intervention"), Y=dat$change, 
                    alternative="greater", method.list=list(name="Stephenson", s=6), 
@@ -241,6 +347,7 @@ ci6 = ci_quantile( Z=as.numeric(dat$group == "intervention"), Y=dat$change,
 ci2 = ci_quantile( Z=as.numeric(dat$group == "intervention"), Y=dat$change, 
                    alternative="greater", method.list=list(name="Stephenson", s=2), 
                    nperm=nperm, alpha=0.10 )
+
 par(mfrow = c(1, 2))
 plot_quantile_CIs(ci6, main="s=6", k_start = n-37)
 plot_quantile_CIs(ci2, main="s=2", k_start = n-37)
@@ -250,50 +357,4 @@ plot_quantile_CIs(ci2, main="s=2", k_start = n-37)
 save.image("Homefood20220921.RData") # save the analysis result
 ```
 
-
-
-# Power comparison among different Stephenson rank sum statistics
-
-We first give the data generating process. Here we consider the case where the control potential outcome follows the standard Gaussian distribution and the treatment potential outcome follows the Gaussian distribution with mean 1 and variance 2. This include the case where the individual effect follows Gaussian distribution mean 1 and variance 1, independent of the control potential outcome.  
-```{r}
-rm(list=ls())
-library(RIQITE)
-gen_PO <- function(n){
-  mu0 = 0
-  sd0 = 1
-  mu1 = 1
-  sd1 = 2
-  Y1 = rnorm(n, mean = mu1, sd = sd1)
-  Y0 = rnorm(n, mean = mu0, sd = sd0)
-  return(data.frame(Y1 = Y1, Y0 = Y0))
-}
-```
-
-We then conduct simulation over 100 simulated data sets, using Stephenson rank sum statistics with parameter $s$ equal to 2, 6 and 10. 
-```{r}
-n = 120
-iter.max = 500
-nperm = 10^5
-simu.result <- simu_power( gen=gen_PO, n=n, treat.prop=0.5, iter.max=iter.max, 
-                           Steph.s.vec=c(2, 6, 10), alternative="greater", alpha=0.1, 
-                           nperm=nperm, print.iter=100 )
-save.image("PowerSimu20220921.RData") # save the simulation result
-```
-
-The code below compares the average lower confidence limits of $n(0)$, the number of units with effects greater than 0.
-```{r}
-summary_power( result=simu.result, measure="CI_n(c)", alternative="greater", cutoff=0  )
-```
-
-The code below compares the average lower confidence limits of $tau_{(k)}$, the individual effect at rank $k$. 
-```{r}
-summary_power( result=simu.result, measure="CI_tau(k)", alternative="greater", 
-               cutoff=NULL, k=n  )
-```
-
-The code below compares the power for testing the null hypothesis $H_0: \tau_{(k)} \le 1$, with $k$ equals the sample size $n$.
-```{r}
-summary_power( result=simu.result, measure="test_tau(k)", alternative="greater", 
-               cutoff=1, k=n  )
-```
 

@@ -7,7 +7,7 @@
 calc_power(
   n,
   Y0_distribution = rnorm,
-  tx_function = tx_function_factory("constant"),
+  tx_function = "constant",
   p_tx = 0.5,
   R = 100,
   iter_per_set = 10,
@@ -19,7 +19,8 @@ calc_power(
   score = NULL,
   stat.null = NULL,
   nperm = 1000,
-  calc_ICC = FALSE
+  calc_ICC = FALSE,
+  ...
 )
 }
 \arguments{
@@ -30,12 +31,16 @@ values, or a list of discrete values to bootstrap sample from
 (with replacement).  Function takes single parameter of sample
 size. Default is normal.}
 
-\item{tx_function}{Function that takes Y0 and returns a set of
-treatment effects.  Default is tx_constant.}
+\item{tx_function}{Either a string name of an implemented
+distribution (rexp, rnorm, linear, etc.) or a function that takes
+Y0 and returns a set of treatment effects.  Default is a constant tx effect.
+tx_constant.}
 
 \item{iter_per_set}{Number of permutations per finite dataset.}
 
 \item{calc_ICC}{Calculate how much power varies across finite datasets.}
+
+\item{...}{Extra parameters to generate treatment impacts with.}
 }
 \description{
 Given a specified DGP for control outcomes and treatment impacts,
