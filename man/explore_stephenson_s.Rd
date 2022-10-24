@@ -15,6 +15,9 @@ explore_stephenson_s(
   percentile = 1,
   alpha = 0.05,
   c = 0,
+  k.vec = NULL,
+  quantile_n_CI = 0.5,
+  targeted_power = TRUE,
   alternative = "greater",
   nperm = 1000,
   parallel = FALSE,
@@ -24,6 +27,14 @@ explore_stephenson_s(
 }
 \arguments{
 \item{s}{Numeric list of s values to test using the Stephenson rank.}
+
+\item{k.vec}{Which quantiles to examine (if targeted_power =
+FALSE).  See calc_CI_precision_finite.}
+
+\item{targeted_power}{TRUE means focus on passed percentile and
+calculate power for that specific quantile.  FALSE means
+calculate simultenaous confidence intervals for all quantiles,
+leaving power caculation to post-simulation exploration.}
 }
 \description{
 Conduct power simulation against a specific data generating process to

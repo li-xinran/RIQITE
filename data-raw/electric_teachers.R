@@ -12,8 +12,14 @@ table(dat$TxAny)
 
 #dat = sample_n( dat, nrow(dat) )
 
+dat <- dat %>%
+    relocate( Site, T.ID, Tx, TxAny ) %>%
+    arrange( Site, T.ID )
 dat
 
 electric_teachers = dat
 
-usethis::use_data(dat, overwrite = TRUE)
+usethis::use_data(electric_teachers, overwrite = TRUE)
+
+
+sinew::makeOxygen(electric_teachers)

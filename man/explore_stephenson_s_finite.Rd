@@ -2,7 +2,7 @@
 % Please edit documentation in R/calc_power.R
 \name{explore_stephenson_s_finite}
 \alias{explore_stephenson_s_finite}
-\title{Explore power across a range of s values}
+\title{Explore power and precision across a range of s values}
 \usage{
 explore_stephenson_s_finite(
   s = c(2, 5, 10, 30),
@@ -11,17 +11,30 @@ explore_stephenson_s_finite(
   p_tx,
   R = 100,
   percentile = 1,
+  k.vec = NULL,
   alpha = 0.05,
   c = 0,
+  quantile_n_CI = 0.5,
   alternative = "greater",
   stat.nulls = NULL,
-  nperm = 1000
+  nperm = 1000,
+  targeted_power = TRUE
 )
 }
 \arguments{
-\item{s}{Numeric list of s values to test using the Stephenson rank.}
+\item{s}{Numeric list of s values to test using the Stephenson
+rank.}
 
-\item{stat.nulls}{Optional list of the precomputed null distributions of the statistics.}
+\item{k.vec}{Which quantiles to examine (if targeted_power =
+FALSE).  See calc_CI_precision_finite.}
+
+\item{stat.nulls}{Optional list of the precomputed null
+distributions of the statistics.}
+
+\item{targeted_power}{TRUE means focus on passed percentile and
+calculate power for that specific quantile.  FALSE means
+calculate simultenaous confidence intervals for all quantiles,
+leaving power caculation to post-simulation exploration.}
 }
 \description{
 Conduct power simulation against specific finite-sample dataset to

@@ -58,6 +58,7 @@ simu_power <- function(gen = normal_gen_PO, n = 100, treat.prop = 0.5, iter.max 
                        keep_data = FALSE
                         ){
 
+    # precompute all null distributions
   m = floor( n * treat.prop )
   Z.perm = assign_CRE(n, m, nperm)
   stat.null.all = list()
@@ -68,14 +69,19 @@ simu_power <- function(gen = normal_gen_PO, n = 100, treat.prop = 0.5, iter.max 
   }
   cat("Monte Carlo approximation for null distributions completed...\n")
 
+  # set up some places to store results
   ci.upper.all = list()
   ci.lower.all = list()
   for( s.ind in 1:length(Steph.s.vec) ){
     ci.upper.all[[s.ind]] = matrix(NA, nrow = n, ncol = iter.max)
     ci.lower.all[[s.ind]] = matrix(NA, nrow = n, ncol = iter.max)
   }
+
+  # generate all assignments
   Z.CRE = assign_CRE(n, m, iter.max)
 
+
+  # calculate all CIs across all generated datasets.
   dat.all = list()
   for(iter in 1:iter.max){
     dat = gen(n)
@@ -136,7 +142,8 @@ simu_power <- function(gen = normal_gen_PO, n = 100, treat.prop = 0.5, iter.max 
 #' @param k An integer that specifies the quantile of individual effects under investigation.
 #'
 #' @export
-summary_power <- function(result, measure = c( "CI_n(c)", "test_tau(k)", "CI_tau(k)" ),
+summary_power <- function(result,
+                          measure = c( "CI_n(c)", "test_tau(k)", "CI_tau(k)" ),
                           alternative = "greater", cutoff = 0, k = NULL){
 
   measure = match.arg(measure)
@@ -147,9 +154,7 @@ summary_power <- function(result, measure = c( "CI_n(c)", "test_tau(k)", "CI_tau
       tab$ci.mean[i] = mean( colSums( result$ci.lower.all[[i]] > cutoff ) )
     }
     return(tab)
-  }
-
-  if(measure == "CI_n(c)" & alternative == "less"){
+  } else if(measure == "CI_n(c)" & alternative == "less"){
     tab = data.frame(s = result$Steph.s.vec, ci.mean = rep(NA, length(result$Steph.s.vec)))
     for(i in 1:nrow(tab)){
       tab$ci.mean[i] = mean( colSums( result$ci.upper.all[[i]] < cutoff ) )
@@ -219,6 +224,7 @@ if(FALSE){
                        nperm = 10^3, tol = 10^(-3), switch = TRUE )
 
   summary_power(result, measure = "CI_n(c)", alternative = "greater", cutoff = 0)
+
   debugonce( summary_power )
   summary_power(result, measure = "test_tau(k)", k = 120 )
   summary_power(result, measure = "CI_tau(k)", k = 120 )
