@@ -326,6 +326,7 @@ ggsave( filename = "demo_code/s_selector.pdf", width = 8, height = 4 )
 ```
 
 
+
 We identify which $s$ gave the highest power across the different groups as follows:
 ```{r, warning=FALSE}
 avg %>% ungroup() %>%
