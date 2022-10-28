@@ -44,6 +44,22 @@ dat %>% group_by( TxAny ) %>%
 summary( lm( std_gain ~ TxAny, data=dat ) )
 
 
+
+#### Check power and performance for specific quantile ####
+
+rho = 0
+rs <- explore_stephenson_s( s = c(2, 5, 10, 20),
+                      n = nrow( dat ),
+                      Y0_distribution = cdat$std_gain,
+                      tx_function = "rexp",
+                      scale_tx = 0.5, ATE = EstTx, rho = -0.45,
+                      R = R, calc_ICC = TRUE,
+                      targeted_power = TRUE, k.vec = 200 )
+
+rs
+sqrt( rs$EvarY1^2 - rs$EvarY0 )
+
+
 #### Select best test s-value for test statistic  ####
 
 cdat = filter( dat, TxAny == 0 ) # Get standardized outcome
