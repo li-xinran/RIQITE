@@ -115,6 +115,8 @@ generate_finite_data <- function( n,
                                   ... ) {
     Y0s = NA
 
+    stopifnot( !is.null( Y0_distribution ) )
+
     if ( is.function(Y0_distribution) ) {
         Y0s = Y0_distribution( n )
     } else {
@@ -483,6 +485,7 @@ calc_power <- function( n,
                         calc_ICC = FALSE,
                         ... ) {
 
+    stopifnot( !is.null( Y0_distribution ) )
 
     one_run <- function( Rint ) {
         dat = generate_finite_data( n = n,
@@ -558,6 +561,7 @@ explore_stephenson_s <- function( s = c(2,5,10,30),
                                   alternative = "greater",
                                   nperm = 1000,
                                   parallel = FALSE,
+                                  n_workers = NULL,
                                   calc_ICC = FALSE,
                                   verbose = FALSE,
                                   ... ) {
@@ -579,8 +583,8 @@ explore_stephenson_s <- function( s = c(2,5,10,30),
 
     one_run <- function( Rint ) {
         dat = generate_finite_data( n = n,
-                                    Y0_distribution,
-                                    tx_function )
+                                    Y0_distribution = Y0_distribution,
+                                    tx_function = tx_function, ... )
         explore_stephenson_s_finite( s = s,
                                      Y0 = dat$Y0, tau = dat$tau,
                                      p_tx = p_tx,
@@ -602,10 +606,12 @@ explore_stephenson_s <- function( s = c(2,5,10,30),
         require( future )
         require( parallel )
         require( furrr )
-        future::plan(multisession,
-                     workers = parallel::detectCores() - 1 )
+        if ( is.null( n_workers ) ) {
+            n_workers = parallel::detectCores() - 1
+        }
+        future::plan(multisession, workers = n_workers )
         if ( verbose ) {
-            cat( "Spreading ", n_blocks, " jobs over ", parallel::detectCores() - 1, " cores\n" )
+            cat( "Spreading ", n_blocks, " jobs over ", n_workers, " cores\n" )
         }
         rps = future_map( rep( iter_per_set, n_blocks ),
                           one_run,
