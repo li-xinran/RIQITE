@@ -8,6 +8,10 @@
 #' specified test statistic, not allowing for ties.
 rank_score <- function( n, method.list = list(name = "Wilcoxon") ){
 
+    if ( method.list$name == "DIM" ) {
+        stop( "Can't calculate rank scores for DIM" )
+    }
+
   if(method.list$name == "Wilcoxon"){
     score = c(1:n)
     score = score/max(score)
@@ -68,6 +72,11 @@ assign_CRE <- function(n, m, nperm){
 #'
 #' @export
 null_dist <- function(n, m, method.list = NULL, score = NULL, nperm = 10^5, Z.perm = NULL){
+
+    if ( method.list$name == "DIM" ) {
+        stop( "Can't calculate canonical null distribution for DIM" )
+    }
+
   if(is.null(score)){
     score = rank_score( n, method.list )
   }
@@ -100,7 +109,7 @@ sort_treat <- function(Y, Z){
 
 
 #' @title minimum stat value in H_{k,c}
-min_stat <- function(Z, Y, k, c, method.list = NULL, score = NULL, ind.sort.treat = NULL){
+min_stat <- function(Z, Y, k, c, method.list = NULL, score = NULL, ind.sort.treat = NULL) {
   n = length(Y)
   m = sum(Z)
   if(is.null(score)){
@@ -140,11 +149,11 @@ pval_H_k_c <- function(Z, Y, k, c,
 
   # emp null dist #
   if(is.null(stat.null)){
-    stat.null = null_dist(n, m, score = score, nperm = nperm, Z.perm = Z.perm)
+    stat.null = null_dist(n, m, score = score, nperm = nperm, Z.perm = Z.perm, method.list = method.list )
   }
 
   # min stat value under H_{k,c} #
-  stat.min = min_stat(Z, Y, k, c, score = score, ind.sort.treat = ind.sort.treat)
+  stat.min = min_stat(Z, Y, k, c, score = score, ind.sort.treat = ind.sort.treat, method.list = method.list )
 
   # p-value #
   pval = mean( stat.null >= stat.min )
@@ -171,7 +180,7 @@ conf_quant_larger <- function( Z, Y, k.vec = NULL, method.list = NULL, score = N
 
   # emp null dist #
   if(is.null(stat.null)){
-    stat.null = null_dist(n, m, score = score, nperm = nperm, Z.perm = Z.perm)
+    stat.null = null_dist(n, m, score = score, nperm = nperm, Z.perm = Z.perm, method.list = method.list )
     nperm = length(stat.null)
   }else{
     nperm = length(stat.null)
@@ -307,9 +316,10 @@ conf_quant_larger <- function( Z, Y, k.vec = NULL, method.list = NULL, score = N
 
 #' Randomization test for quantiles of individual treatment effects
 #'
-#' Obtain the p-value for testing the null hypothesis H0: tau_{(k)} <=
-#' c, or H0: tau_{(k)} >= c, or H0: tau_{(k)} = c, where tau_{(k)}
-#' denotes individual treatment effect at rank k.
+#' Obtain the p-value for testing the null hypothesis H0:
+#' \eqn{\tau_{(k)} \leq c}, or \eqn{H0: \tau_{(k)} \geq c}, or
+#' \eqn{H0: \tau_{(k)} = c}, where \eqn{\tau_{(k)}} denotes individual
+#' treatment effect at rank k.
 #'
 #' @param Z An \eqn{n} dimensional treatment assignment vector.
 #' @param Y An \eqn{n} dimensional observed outcome vector.

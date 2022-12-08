@@ -62,7 +62,8 @@ The p-value for testing the specified null hypothesis of
 interest.
 }
 \description{
-Obtain the p-value for testing the null hypothesis H0: tau_{(k)} <=
-c, or H0: tau_{(k)} >= c, or H0: tau_{(k)} = c, where tau_{(k)}
-denotes individual treatment effect at rank k.
+Obtain the p-value for testing the null hypothesis H0:
+\eqn{\tau_{(k)} \leq c}, or \eqn{H0: \tau_{(k)} \geq c}, or
+\eqn{H0: \tau_{(k)} = c}, where \eqn{\tau_{(k)}} denotes individual
+treatment effect at rank k.
 }

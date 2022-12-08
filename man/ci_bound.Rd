@@ -21,31 +21,40 @@ ci_bound(
 
 \item{Y}{An \eqn{n} dimensional observed outcome vector.}
 
-\item{alternative}{A character takes value "greater" and "less" indicating the direction of the alternative hypothesis.}
+\item{alternative}{A character takes value "greater" and "less"
+indicating the direction of the alternative hypothesis.}
 
 \item{method.list}{A list specifies the choice of the rank sum test
-statistic. For example, list(name = "DIM") means the difference-in-means statistic,
-list(name="Wilcoxon") means the Wilcoxon rank sum statistic,
-and list(name = "Stephenson", s = 10) means the Stephenson rank sum statistic with parameter s=10.}
+statistic. For example, list(name = "DIM") means the
+difference-in-means statistic, list(name="Wilcoxon") means the
+Wilcoxon rank sum statistic, and list(name = "Stephenson", s =
+10) means the Stephenson rank sum statistic with parameter s=10.}
 
-\item{Z.perm}{A \eqn{n \times nperm} matrix that specifies the permutated assignments for approximating the null distribution of the test statistic.}
+\item{Z.perm}{A \eqn{n \times nperm} matrix that specifies the
+permutated assignments for approximating the null distribution of
+the test statistic.}
 
-\item{nperm}{A positive integer representing the number of permutations for
-approximating the randomization distribution of the test statistic.}
+\item{nperm}{A positive integer representing the number of
+permutations for approximating the randomization distribution of
+the test statistic}
 
-\item{impute}{A character specifies the form of the test statistic. "control" means we use
-the imputed control potential outcomes in the test statistic, and "both" means we use the
-imputed observed outcome in the test statistic.}
+\item{impute}{A character specifies the form of the test statistic.
+"control" means we use the imputed control potential outcomes in
+the test statistic, and "both" means we use the imputed observed
+outcome in the test statistic.}
 
-\item{alpha}{A numeric object specifies the level of the confidence interval. In particular, the confidence level is \eqn{1-\alpha}.}
+\item{alpha}{A numeric object specifies the level of the confidence
+interval. In particular, the confidence level is \eqn{1-\alpha}.}
 
-\item{tol}{A numerical object specifying the precision of the obtained
-confidence intervals. For example, if tol = 10^(-3), then the confidence
-limits are precise up to 3 digits.}
+\item{tol}{A numerical object specifying the precision of the
+obtained confidence intervals. For example, if tol = 10^(-3),
+then the confidence limits are precise up to 3 digits.}
 }
 \value{
-The p-value for testing the specified null hypothesis of interest.
+The p-value for testing the specified null hypothesis of
+interest.
 }
 \description{
-Obtain confidence interval for the maximum or minimum individual effect
+Obtain confidence interval for the maximum or minimum individual
+effect
 }

@@ -2,7 +2,8 @@
 % Please edit documentation in R/calc_power.R
 \name{calc_power_finite}
 \alias{calc_power_finite}
-\title{Calculate power for a finite-sample dataset.}
+\title{Calculate power or properties of quantile confidence intervals for
+a finite-sample dataset.}
 \usage{
 calc_power_finite(
   Y0,
@@ -16,14 +17,19 @@ calc_power_finite(
   method.list = list(name = "Stephenson", s = 10),
   score = NULL,
   stat.null = NULL,
-  nperm = 1000
+  use_pval_bound = FALSE,
+  nperm = 1000,
+  k.vec = NULL,
+  quantile_n_CI = NA,
+  targeted_power = TRUE,
+  summarise = TRUE
 )
 }
 \arguments{
-\item{R}{Number of permutation replicates}
+\item{R}{Number of permutation replicates for power calculation.}
 
 \item{percentile}{Which quantile is of interest (default is 1, the
-max)}
+max).}
 
 \item{alpha}{Alpha for testing (default of 0.05)}
 
@@ -48,19 +54,42 @@ statistic.}
 \item{nperm}{A positive integer representing the number of
 permutations for approximating the randomization distribution of
 the rank sum statistic.}
+
+\item{quantile_n_CI}{What quantile of the distribution of number of
+significant units should be reported?}
+
+\item{If}{TRUE, calculates the overall bound on impacts using
+\code{pval_bound()} (which allows for the Diff in Means test statistic
+and other stats that do not need to be distribution free).
+Otherwise uses \code{pval_quantile()}.}
 }
 \value{
-Small tibble with statistics of the power calculation (true
-effect being tested, power to detect, sample size, etc.).  sd_Y0,
-sd_Y1, sd_tau are the standard deviations of the potential
-outcomes and individual treatment impacts, and r is the
-correlation of Y0 and the treatment effects.
+If targeted_power=TRUE, return a small tibble with
+statistics of the power calculation (true effect being tested,
+power to detect, sample size, etc.).  sd_Y0, sd_Y1, sd_tau are
+the standard deviations of the potential outcomes and individual
+treatment impacts, and r is the correlation of Y0 and the
+treatment effects.  Otherwise, if summarise = FALSE, return a
+matrix with each column being a simulation run and each row being
+a quantile, with the listed confidence interval limit for each
+entry.  Otherwise a tibble with a row for each quantile specified
+in k.vec.  The "n" column is a repeated value of the median
+number of quantiles found significant across simulations.#'
 }
 \description{
 Given a fixed schedule of potential outcomes and a proportion to
-assign to treatment, calculate (via simulation) the power to detect
-a given quantile effect for that specific dataset.
+assign to treatment, calculate (via simulation) either the power to
+reject a null hypothesis or the distribution of all the confidence
+intervals.
 }
-\seealso{
-calc_CI_precision_finite
+\details{
+If targeted_power = FALSE, this method will estimate (via
+simulation) the distributions all simultaneous confidence intervals
+that can then be post processed to determine their variability, and
+also the CI for the number of positive units, etc.
+
+Otherwise, it will, by simulation, calculate the chance of
+rejecting a null by repeatedly rerandomizing the data and
+conducting a hypothesis test on the results, via using
+\code{pval_quantile()} (or \code{pval_bound()} if \code{use_pval_bound} is TRUE)
 }

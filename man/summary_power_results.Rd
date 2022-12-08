@@ -8,32 +8,35 @@ summary_power_results(
   result,
   alternative = "greater",
   c = 0,
-  quantile_n_CI = 0.5
+  quantile_n_CI = NA
 )
 }
 \arguments{
-\item{result}{A tibble with one row for each quantile in the result object passed.}
+\item{result}{A data frame with one row for each quantile in the
+result object passed (e.g., the result from \code{calc_power_finite()}
+with \code{targeted_power=FALSE}).}
 
 \item{alternative}{A character takes value "greater" and "less",
 indicating the direction of alternative hypotheses.}
 
-\item{c}{A numerical object specifying the cutoff.}
+\item{c}{A number specifying the cutoff.}
 
-\item{quantile_n_CI}{Quantile of the distribution of lower
-confidence limits for the number of significant units.  Default
-is 0.5 (median) reporting the median size of the confidence
+\item{quantile_n_CI}{What quantile of the distribution of lower
+confidence limits for the number of significant units to
+calculate.  NA (the default) means calculate mean instead of
+median. 0.5 would report the median size of the confidence
 interval for number of significant units.}
 }
 \description{
-Summarize the simulation to compare the performance of various
-Stephenson rank statistics.
+Summarize the CI_precision simulation to compare the performance of
+various Stephenson rank statistics.
 }
 \details{
-Calculates three types of precision.  First, we compare the average
-confidence limits for the number of units with effects passing the
-threshold cutoff 'c' (default of 0). We also calculate the median
-confidence limits for the individual treatment effect for all
-ranks. Finally, we compare the power for testing whether the
-individual treatment effect passes the threshold cutoff for each
-rank.
+Calculates three types of precision.  First, we summarize the
+distribution of the confidence limit for the number of units with
+effects passing the threshold cutoff 'c' (default of c=0). We also,
+for each rank, calculate the median confidence limits for the
+individual treatment effect for that rank. Finally, we calculate
+the power for testing whether the individual treatment effect
+passes the threshold cutoff for each rank.
 }

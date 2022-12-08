@@ -14,12 +14,16 @@ calc_power(
   percentile = 1,
   alpha = 0.05,
   c = 0,
+  k.vec = NULL,
   alternative = "greater",
   method.list = list(name = "Stephenson", s = 10),
+  targeted_power = TRUE,
   score = NULL,
   stat.null = NULL,
   nperm = 1000,
   calc_ICC = FALSE,
+  quantile_n_CI = NA,
+  summarise = TRUE,
   ...
 )
 }
@@ -36,9 +40,42 @@ distribution (rexp, rnorm, linear, etc.) or a function that takes
 Y0 and returns a set of treatment effects.  Default is a constant tx effect.
 tx_constant.}
 
+\item{R}{Number of permutation replicates for power calculation.}
+
 \item{iter_per_set}{Number of permutations per finite dataset.}
 
-\item{calc_ICC}{Calculate how much power varies across finite datasets.}
+\item{percentile}{Which quantile is of interest (default is 1, the
+max).}
+
+\item{alpha}{Alpha for testing (default of 0.05)}
+
+\item{c}{Threshold for null (see pval_quantile)}
+
+\item{alternative}{A character takes value "greater", "less" and
+"two.sided", indicating the alternative hypothesis.}
+
+\item{method.list}{A list specifies the choice of the rank sum test
+statistic. For example, list(name="Wilcoxon") means the Wilcoxon
+rank sum statistic, and list(name = "Stephenson", s = 10) means
+the Stephenson rank sum statistic with parameter s=10.}
+
+\item{score}{An \eqn{n} dimensional transformed ranks, i.e.,
+(phi(1), phi(2), ..., phi(n)), where phi() denotes the rank
+transformation function.}
+
+\item{stat.null}{An vector whose empirical distribution
+approximates the randomization distribution of the rank sum
+statistic.}
+
+\item{nperm}{A positive integer representing the number of
+permutations for approximating the randomization distribution of
+the rank sum statistic.}
+
+\item{calc_ICC}{Calculate how much power varies across finite
+datasets.}
+
+\item{quantile_n_CI}{What quantile of the distribution of number of
+significant units should be reported?}
 
 \item{...}{Extra parameters to generate treatment impacts with.}
 }

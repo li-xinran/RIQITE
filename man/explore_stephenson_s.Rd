@@ -16,11 +16,12 @@ explore_stephenson_s(
   alpha = 0.05,
   c = 0,
   k.vec = NULL,
-  quantile_n_CI = 0.5,
+  quantile_n_CI = NA,
   targeted_power = TRUE,
   alternative = "greater",
   nperm = 1000,
   parallel = FALSE,
+  n_workers = NULL,
   calc_ICC = FALSE,
   verbose = FALSE,
   ...
@@ -29,13 +30,33 @@ explore_stephenson_s(
 \arguments{
 \item{s}{Numeric list of s values to test using the Stephenson rank.}
 
+\item{p_tx}{Proportion of units to be treated.}
+
+\item{R}{Number of simulation iterations to do.}
+
+\item{percentile}{For targeted power, what percentile to target.}
+
+\item{alpha}{Significance level of the test.}
+
+\item{c}{Threshold bound for treatment impacts for hypothesis
+testing.}
+
 \item{k.vec}{Which quantiles to examine (if targeted_power =
-FALSE).  See calc_CI_precision_finite.}
+FALSE).}
+
+\item{quantile_n_CI}{What quantile of the distribution of lower
+confidence limits for the number of significant units to
+calculate.  NA (the default) means calculate mean instead of
+median. 0.5 would report the median size of the confidence
+interval for number of significant units.}
 
 \item{targeted_power}{TRUE means focus on passed percentile and
 calculate power for that specific quantile.  FALSE means
 calculate simultenaous confidence intervals for all quantiles,
 leaving power caculation to post-simulation exploration.}
+
+\item{alternative}{A character takes value "greater" and "less",
+indicating the direction of alternative hypotheses.}
 }
 \description{
 Conduct power simulation against a specific data generating process to
