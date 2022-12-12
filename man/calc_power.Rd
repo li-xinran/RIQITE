@@ -18,6 +18,7 @@ calc_power(
   alternative = "greater",
   method.list = list(name = "Stephenson", s = 10),
   targeted_power = TRUE,
+  use_pval_bound = FALSE,
   score = NULL,
   stat.null = NULL,
   nperm = 1000,
