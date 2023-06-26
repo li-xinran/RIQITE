@@ -3,3 +3,6 @@ heller_s_check_results.rds
 s_selector.pdf
 RIllustration20220921_cache
 RIllustration20220921_files
+.DS_Store
+plots/
+data_store/

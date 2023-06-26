@@ -7,7 +7,9 @@ output:
     number_sections: yes
 editor_options: 
   chunk_output_type: console
+abstract: "This file illustrates using the RIQITE package by implementing the analyses shown in the main paper."
 ---
+
 
 ---
 bibliography: ["permutation.bib"]
@@ -16,8 +18,8 @@ link-citations: true
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-#setwd("~/Dropbox/Own/Projects/Quantile Effects/code2021Aug/R illustration")
+knitr::opts_chunk$set(echo = TRUE, cache.lazy = FALSE)
+setwd("~/Dropbox/Own/Projects/Quantile Effects/code2021Aug/R illustration")
 library(dplyr)
 library(ggplot2)
 library( RIQITE )
@@ -85,7 +87,8 @@ We first perform the standard regression analysis assessing the relation between
 lm.fit <- lm(EntryAge ~ (BirthMonth=="Dec"), data)
 cat(paste( 
   "esimated average effect is", round( as.numeric(lm.fit$coefficients[2]), digits = 3), 
-  "and F statistic is", round( as.numeric( summary(lm.fit)$fstatistic[1] ), digits = 0), "\n" 
+  "and F statistic is", round( as.numeric( summary(lm.fit)$fstatistic[1] ), digits = 0), 
+  "\n" 
   ))
 ```
 
@@ -139,7 +142,7 @@ tau.min.upper = ci_quantile(Z=data$Z, Y=data$Y, k.vec = 1, alternative = "less",
               method.list=list(name="Stephenson", s=10), Z.perm=Z.perm,  alpha=0.05)$upper
 print(paste( "lower confidence limit for effect range is", 
              max(0, tau.max.lower - tau.min.upper) ))
-save.image("BirthSchoolAge20220921.RData") # save the analysis result
+save.image("BirthSchoolAge20221028.RData") # save the analysis result
 ```
 
 
@@ -149,7 +152,7 @@ save.image("BirthSchoolAge20220921.RData") # save the analysis result
 We next evaluate a teacher professional development RCT where treated teachers were given a professional development course on electric circuits.
 We get the data from @HSMHSD10.
 The cleaned data, as described in the paper, is part of the package.
-We load it and estimate the average treatment effect (ATE) via linear regression:
+We load it and estimate the Average Treatment Effect (ATE) via linear regression:
 
 ```{r get the professional development data, message=FALSE}
 data( electric_teachers )
@@ -159,8 +162,8 @@ est_ATE <- round(mod$coefficients[2], digits = 2)
 est_ATE
 ```
 
-The following figure shows the histograms of the observed gain scores in the treatment and control groups. 
-```{r, fig.height = 4, fig.width = 3.2, fig.align = "center"}
+The following figure shows the histograms of the observed gain scores in the treatment and control groups.
+```{r electric_teacher_histograms, fig.height = 4, fig.width = 3.2, fig.align = "center"}
 hist(electric_teachers$gain[electric_teachers$TxAny==1], 
      xlim = range(electric_teachers$gain), freq = FALSE, ylim = c(0, 0.065), 
      col = "grey", border=FALSE, breaks = 20,
@@ -169,10 +172,10 @@ hist(electric_teachers$gain[electric_teachers$TxAny==0],
      freq = FALSE, add = TRUE, breaks = 20, col = NULL)
 ```
 
-We can compare the variation of the units in the treatment and control arms, which can be a clue to how much heterogeneity there might be.
-We do this in effect size units, by first standardizing gain by the control-side variation.
-```{r}
-sd_0 = sd( electric_teachers$gain[ electric_teachers$TxAny == 0 ] )
+We can compare the variation of the units in the treatment and control arms, which can be a clue to how much impact heterogeneity there might be.
+We do this in effect size units, by first standardizing gain by the control-side variation in outcome at baseline:
+```{r standardize_outcomes}
+sd_0 = sd( electric_teachers$Per.1[ electric_teachers$TxAny == 0 ] )
 electric_teachers$std_gain = electric_teachers$gain / sd_0
 electric_teachers %>% group_by( TxAny ) %>%
     summarise( raw_mean = mean( gain ),
@@ -184,14 +187,16 @@ electric_teachers %>% group_by( TxAny ) %>%
                sd = sd( std_gain ) )
 ```
 
-Under no correlation between $Y_i(0)$ and $\tau_i$, the standard deviation of the treatment impacts would be, using $var(Y_i(1)) = var(Y_i(0)) + var(\tau_i)$,
+If there were no correlation between $Y_i(0)$ and $\tau_i$, the standard deviation of the treatment impacts would be, using $var(Y_i(1)) = var(Y_i(0)) + var(\tau_i)$,
 ```{r}
-sqrt( 1.12 - 1 )
+tx_het <- sqrt( 0.852^2 - 0.806^2 )
+tx_het
 ```
-I.e., around $0.35\sigma$, in effect size units.  This would be $0.35 \times sd_0$, or `r round(sqrt( 1.12 - 1 ) * sd_0,digits=1)` in the original scale.
+I.e., around $0.28\sigma$, in effect size units.  This would be $0.28 \times sd_0$, or `r round( tx_het * sd_0,digits=1)` in the original scale.
 
 An estimate of the minimum treatment effect possible is the largest control outcome minus the largest treated outcome, which is about $3.16 - -0.63 = `r 3.16 + 0.63`$.
 The maximum, by contrast, is $5.06 - -2.22 = `r 5.06 + 2.22`.
+These are extremely conservative bounds, in that such magnitudes are unlikely to exist in practice.
 
 
 ## Determining an s-value for the test statistic
@@ -199,34 +204,35 @@ The maximum, by contrast, is $5.06 - -2.22 = `r 5.06 + 2.22`.
 We plan on using a Stephenson's Rank Sum test, but need to determine an appropriate value of $s$.
 We first conduct a sensitivity analysis across a range of scenarios to determine which $s$ have the highest amount of power for the  top 10 quantiles, the next 20 quantiles, and the next 40 quantiles.
 
-To illustrate, we first run a check on best $s$ for a single scenario.
-We first get the empirical distribution of the control outcomes and calculate a treatment effect (all in standardized units).
-We then explore the case where the impacts are normally distributed, and negatively correlated with $Y_i(0)$, which could be the case for our data given our histogram above.
+To illustrate this process, we first run a check on what the best $s$ is for a single scenario.
+We use the empirical distribution of the control outcomes as our distribution, and calculate a treatment effect (all in standardized units).
+Our first scenario has impacts be normally distributed and not correlated with $Y_i(0)$, in line with our explorations above.
 
 ```{r run_single_s_explore, cache=TRUE}
+set.seed(303020)
 cdat = filter( electric_teachers, TxAny == 0 )
 ate = est_ATE / sd_0
-R = 100
+R = 1000
 nperm = 10^3
 s_list = c( 2, 3, 4, 5, 6, 8, 10, 15, 20 )
 res <- explore_stephenson_s( s = s_list,
                       n = nrow( electric_teachers ),
                       Y0_distribution = cdat$std_gain,
                       tx_function = "rnorm", ATE = ate, 
-                      tx_scale = 0.35, rho = -0.5,
+                      tx_scale = tx_het, rho = 0,
                       nperm = nperm,
                       R = R, calc_ICC = FALSE,
-                      targeted_power = FALSE, k.vec = (233-100):233 )
+                      targeted_power = FALSE, k.vec = (233-99):233 )
 ```
 
 We get one row per targeted quantile and explored $s$, telling us how easy it was to detect effects at that quantile.
-Here we see how our performance was on the 200th largest effect.
+Here we see how our performance was on the 170th largest effect (of 233 effects).
 ```{r}
-filter( res, k == 200 )
+filter( res, k == 170 )
 ```
-We note $s$ of about 3 or 4 tends to give the highest bound on the impact (see `q_ci`). 
+In our table, we see that $s$ of 6 or 8 gave the highest bound on the impact for this quantile (see the `q_ci` column).  The power columns shows the power to reject no treatment effect for the 170th largest effect.  Power is very high for $s = 8$, corresponding to the high median confidence bound. The $n$ column is for the entire set of quantiles, and shows the average number of units found as significant: For $s = 8$ we are finding around 63 units as significant across the simulations.
 
-We next make a grid of different scenarios to explore:
+We next make a grid of different scenarios to explore to see if our trends of best $s$ are consistent across different possible scenarios:
 ```{r}
 checks = expand_grid( TxVar = c( 0.25, 0.75 ),
                       tx_dist = c( "rexp", "rnorm" ),
@@ -238,8 +244,9 @@ checks = bind_rows( checks,
                     tibble( TxVar = 0, tx_dist = "constant", rho = 0 ) )
 ```
 
-This gives `r nrow(checks)` scenarios. We use `pmap()` to run `explore_stephenson_s` across them.
-The `explore_stephenson_s()` function will repeatedly generate datasets and analyze them, and then return a summary of the results. We focus on the top 35 quantiles.
+We have `r nrow(checks)` scenarios. We use `pmap()` to run `explore_stephenson_s` across them.
+The `explore_stephenson_s()` function will repeatedly generate datasets and analyze them, and then return a summary of the results. It will do this using parallel processing, if we set that flag and if our computer has multiple cores.
+We specify saving the results for the top 100 quantiles:
 
 ```{r secret_simulation_block, include=FALSE}
 if ( !file.exists( here::here( "demo_code/heller_s_check_results.rds" ) ) ) {
@@ -250,11 +257,11 @@ if ( !file.exists( here::here( "demo_code/heller_s_check_results.rds" ) ) ) {
                               Y0_distribution = cdat$std_gain,
                               tx_function = tx_dist,
                               nperm = nperm,
-                              ATE = ate, tx_scale=TxVar, rho = rho,
+                              ATE = ate, tx_scale = TxVar, rho = rho,
                               R = R, calc_ICC = FALSE,
                               parallel = TRUE, n_workers = 5,
                               verbose = TRUE,
-                              targeted_power = FALSE, k.vec = (233-100):233 )
+                              targeted_power = FALSE, k.vec = (233-99):233 )
     } )
     s_selector = unnest( checks, cols = "data" )
     
@@ -271,124 +278,177 @@ checks$data = pmap( checks, function( TxVar, tx_dist, rho ) {
                           n = nrow( dat ),
                           Y0_distribution = cdat$std_gain,
                           tx_function = tx_dist,
-                          ATE = ate, tx_scale=TxVar, rho = rho,
+                          ATE = ate, tx_scale = TxVar, rho = rho,
                           nperm = nperm, R = R, 
-                          calc_ICC = FALSE, parallel = TRUE,
-                          targeted_power = FALSE, k.vec = (233-100):233 )
+                          calc_ICC = FALSE, 
+                          parallel = TRUE, n_workers = 5,
+                          targeted_power = FALSE, k.vec = (233-99):233 )
 } )
 checks
 s_selector = unnest( checks, cols = "data" )
 ```
 
-We note for several scenarios and quantiles, the median lower bound to the CI is $-\infty$.
-To allow for aggregation, we impute a lower bound for these quantiles of -3.79, based on our calculation above:
-```{r}
-s_selector$q_ci[ !is.finite( s_selector$q_ci ) ] = -3.79
-```
+We next aggregate our findings and see what $s$ provides the tightest confidence intervals across a range of quantile groups: the top 10, next 20, next 30, and next 40.
+For each group, we take the median of the median lower confidence bound, to get a sense of how informative our confidence intervals in each group will tend to be.
+We plot this vs. $s$.
+High points on the curve indicate those $s$ that are more informative:
 
-
-We can then aggregate our findings and see what $s$ provides the tightest confidence intervals across a range of quantile groups:
 ```{r plot_s_selector, warning=FALSE}
 n_units = nrow(electric_teachers)
 s_selector = mutate( s_selector,
                      group = cut( k, 
-                                  breaks = c(0, 170, 200, 220, 233),
+                                  breaks = c(0, 233-60, 233-30, 233-10, 233),
                                   labels = c( "v low", "low", "med", "high" ) ) )
 
 s_selector$rho.f = factor( s_selector$rho,
                           levels = c( -0.5, 0, 0.5 ),
                           labels = c( "rho = -0.5", "rho = 0", "rho = 0.5" ) )
 
-avg = s_selector %>% group_by( s, group, rho.f ) %>%
-    summarise( q_ci = median( q_ci ), .groups="drop" ) %>%
-    filter( group != "v low", is.finite( q_ci ) )
+avg = s_selector %>% 
+    group_by( s, group, rho, rho.f ) %>%
+    summarise( q_ci = median( q_ci ),
+               n = n(), .groups="drop" ) %>%
+    filter( group != "v low" )
+avg
 
-s_selector %>% filter( group != "v low" ) %>%
+s_agg = s_selector %>% 
+    group_by( s, group, rho, rho.f, tx_dist ) %>%
+    summarise( q_ci = median( q_ci ) )
+
+s_agg %>%
+    filter( group != "v low" ) %>%
     ggplot( aes( s, q_ci ) ) +
     facet_grid( rho.f ~ group ) +
     geom_hline( yintercept = 0 ) +
-    geom_smooth( aes( col=tx_dist ), method = "loess", se = FALSE, 
-                 span = 1, lwd= 0.5 ) +
-    labs( x = "s", y = "Median lower CI bound", col = "tx distribution:" ) +
+    #geom_smooth( aes( col=tx_dist ), method = "loess", se = FALSE, 
+    #             span = 1, lwd= 0.5 ) +
+    geom_line( aes( col=tx_dist ), lwd=0.5 ) +
+    labs( x = "s", y = "Median lower CI bound", col = "Tx distribution:" ) +
     scale_x_log10( breaks = unique( s_selector$s ) ) +
     theme_minimal() +
     theme( panel.grid.minor = element_blank() ) + 
     geom_point( data = avg, col="black", size=2 ) +
-    coord_cartesian( ylim = c( -1, 2 ) ) +
-    theme( legend.position="bottom", 
-                                legend.direction="horizontal", legend.key.width=unit(1,"cm"),
+    coord_cartesian( ylim = c( -1.5, 2 ) ) +
+    theme( #legend.position="bottom", 
+            #                    legend.direction="horizontal", 
+        legend.key.width=unit(1,"cm"),
            panel.border = element_rect(colour = "grey", fill=NA, size=1) )
     
 ```
 
-```{r include=FALSE, eval=FALSE}
+```{r some_checking_code, include=FALSE, eval=FALSE}
+if ( FALSE ) {
+    s_selector %>% dplyr::filter( s==2, tx_dist=="constant", TxVar == 0 ) %>%
+        pull( group ) %>% table()
+}
+
+# Save plot for main paper.
 ggsave( filename = "demo_code/s_selector.pdf", width = 8, height = 4 )
 ```
 
 
-
-We identify which $s$ gave the highest power across the different groups as follows:
-```{r, warning=FALSE}
-avg %>% ungroup() %>%
-    group_by( rho.f, group ) %>%
-    filter( q_ci == max(q_ci) ) %>%
-    dplyr::select(-q_ci) %>%
-    pivot_wider( names_from="rho.f", values_from="s" ) %>%
-    knitr::kable()
-```
-
-We can explore which $s$ gives the highest bound on the number of units positively impacted by treatment:
+We can also just tally up the winning $s$ across each of the 100 quantiles we are exploring:
 ```{r}
-s_num_n <- s_selector %>% 
-    group_by( TxVar, tx_dist, rho, group ) %>%
+qis <- s_selector %>% 
+    group_by( TxVar, tx_dist, rho, group, k ) %>%
     filter( q_ci == max(q_ci) )
-table( s_num_n$group, s_num_n$s )
+table( group = qis$group, s = qis$s, rho = qis$rho )
 ```
-    
-Across these results, $s = 6$ looks like a reasonable choice.
-If we believe the correlation of $Y_i(0)$ and $\tau_i$ is negative, we might tend to a smaller $s$.
-Given the apparent shift of the treatment vs. control distributions in our data, either treatment variation is slight or there is a negative correlation between $Y_i(0)$ and $\tau_i$ (otherwise the variance of the treated group would be larger than the control group, and they are instead quite similar).
-For number of units tagged as significant, we see $s=2$ through $6$, primarily, across scenarios.
-We thus might adjust our $s$ down a bit to try and optimize multiple goals at once, using, e.g., $s = 5$.
+
+Each cell in this table records the number of times a particular $s$ value had the highest lower confidence bound for a given scenario and given quantile, divided by the groups of quantiles.
+We see that for strong confidence intervals on higher quantiles, lower $s$ is good.
+To obtain more informative findings on the quantiles lower down, higher $s$ is good.
+
+
+Finally, we can look at the number of units found to be significant across the different scenarios and see which $s$ values identify the most units as significant, on average:
+
+```{r}
+n_score <- s_selector %>% 
+    group_by( rho, rho.f, tx_dist, s ) %>%
+    summarize( n = mean( n ), .groups = "drop")
+ggplot( n_score, aes( s, n, col=tx_dist ) ) +
+    facet_wrap( ~ rho.f, nrow=1 ) +
+    geom_point( size=3) + geom_line() +
+    labs( col = "Tx distribution:") +
+    scale_x_log10( breaks = unique( s_selector$s ) ) +
+    theme_minimal() +
+    theme( panel.grid.minor = element_blank() ) + 
+    theme( legend.key.width=unit(1,"cm"),
+           panel.border = element_rect(colour = "grey", fill=NA, size=1) )
+        
+```
+
+
+```{r some_checking_code2, include=FALSE, eval=FALSE}
+
+# Save plot for main paper.
+ggsave( filename = "demo_code/s_selector_n.pdf", width = 8, height = 4 )
+```
+
+
+
+
+Looking across our results, a wide range of $s$ could be argued for.
+There is a cost for small $s$ of 2 through 4 for the lower quantiles.
+The very high $s$ of 10 or above have costs as well, across the simulations: note the down-turn of the power curves in the plot above.
+Given the apparent shift of the treatment vs. control distributions in our data, either treatment variation is not overly large, or there is a negative correlation between $Y_i(0)$ and $\tau_i$ (otherwise the variance of the treated group would be substantially larger than the control group, and they are instead somewhat similar), so we should attend more closely to those simulations that are aligned with these empirical trends.
+For optimizing the number of units tagged as significant, we typically see $s=6$ through $10$ as performing well across the scenarios.
+Overall we might adjust our $s$ down a bit to try and optimize multiple goals at once, using, e.g., $s = 6$.
+
 
 
 ## Analyzing the data
 
 With our selected $s$ in hand, we first test the bounded null hypothesis that all individual effects are non-positive. 
-```{r, cache=TRUE}
-nperm = 10^4
-pval.steph5 <- pval_quantile(Z=electric_teachers$TxAny, Y=electric_teachers$gain, 
+```{r heller_ptest, cache=TRUE}
+selected_s = 6
+nperm = 10^6
+pval.steph <- pval_quantile(Z=electric_teachers$TxAny, Y=electric_teachers$gain, 
                               k=n_units, c=0, alternative = "greater", 
-                              method.list=list(name="Stephenson", s=5), nperm=nperm )
-pval.steph5 # final p-value
+                              method.list=list(name="Stephenson", s=selected_s), nperm=nperm )
+pval.steph # final p-value
 ```
 
 
-We then conduct inference for all quantiles of individual treatment effects. The following figures show the 90% lower confidence limits for all quantiles of individual effects using Stephenson rank statistics with s = 5 and s = 2 (i.e., Wilcoxon rank), respectively. 
+We then conduct inference for all quantiles of individual treatment effects. The following figures show the 90% lower confidence limits for all quantiles of individual effects using Stephenson rank statistics with s = `r selected_s` and s = 2 (i.e., Wilcoxon rank), respectively. 
 
-```{r, fig.height = 4, fig.width = 6.4, fig.align = "center"}
-ci5 = ci_quantile( Z=electric_teachers$TxAny, Y=electric_teachers$gain, alternative="greater", 
-                  method.list=list( name="Stephenson", s=5 ), nperm=nperm, alpha=0.10 )
+```{r heller_quantiles, fig.height = 4, fig.width = 6.4, fig.align = "center"}
+ci6 = ci_quantile( Z=electric_teachers$TxAny, Y=electric_teachers$gain, alternative="greater", 
+                  method.list=list( name="Stephenson", s=selected_s ), nperm=nperm, alpha=0.10 )
 ci2 = ci_quantile( Z=electric_teachers$TxAny, Y=electric_teachers$gain, alternative="greater", 
                   method.list=list( name="Stephenson", s=2 ), nperm=nperm, alpha=0.10 )
+```
+
+We can then visualize the bounds:
+
+```{r}
 par(mfrow = c(1, 2))
-plot_quantile_CIs(ci5, k_start = 102, main = "s=5" )
+s_title = glue::glue( "s={selected_s}" )
+plot_quantile_CIs(ci6, k_start = 102, main = s_title )
 plot_quantile_CIs(ci2, k_start = 102, main = "s=2" )
 ```
 
+```{r save_final_plot, include=FALSE, eval=FALSE}
+pdf(file = "Gain_score_6.pdf" )
+pdf(file = "Gain_score_2.pdf" )
+dev.off()
+```
+
 Finally, we infer the effect range by conducting two tests, one for greater and one for less.  We then can say that there are effects at least as small as some value and at least as large as another.
-```{r, cache=TRUE}
-tau.max.lower = ci_quantile( Z=electric_teachers$TxAny, Y=electric_teachers$gain, k.vec=n_units, alternative="greater", 
-              method.list=list( name="Stephenson", s=5 ), nperm=nperm, alpha=0.05 )$lower
-tau.min.upper = ci_quantile( Z=electric_teachers$TxAny, Y=electric_teachers$gain, k.vec=1, alternative="less", 
-              method.list=list( name="Stephenson", s=5 ), nperm=nperm, alpha=0.05 )$upper
+```{r heller_hettx_test, cache=TRUE}
+tau.max.lower = ci_quantile( Z=electric_teachers$TxAny, Y=electric_teachers$gain, k.vec=n_units, 
+                             alternative="greater", method.list=list( name="Stephenson", s=selected_s ), 
+                             nperm=nperm, alpha=0.05 )$lower
+tau.min.upper = ci_quantile( Z=electric_teachers$TxAny, Y=electric_teachers$gain, k.vec=1, 
+                             alternative="less", method.list=list( name="Stephenson", s=selected_s ), 
+                             nperm=nperm, alpha=0.05 )$upper
 max(0, tau.max.lower - tau.min.upper)
 ```
 
 In this case, we have no evidence of effect heterogeniety (all the effects could be the same).
 
 ```{r, include=FALSE}
-save.image("Develop20220921.RData") # save the analysis result
+save.image("Develop20221028.RData") # save the analysis result
 ```
 
 
@@ -396,11 +456,12 @@ save.image("Develop20220921.RData") # save the analysis result
 # Evaluating the effects of six-month nutrition therapy
 
 We get the data for the homefood study from <https://doi.org/10.7910/DVN/38X3LX>.
-We download the SPSS Binary (Original File Format) there. The details of the study can be found at <https://clinicaltrials.gov/ct2/show/NCT03995303>.
-Once we have the file, we can load as follows:
+We download the SPSS Binary (Original File Format) there.
+The details of the study can be found at <https://clinicaltrials.gov/ct2/show/NCT03995303>.
 
-```{r, warning=FALSE}
-dat = foreign::read.spss(here::here( "demo_code/Data file, 24.09.2021.sav" ),
+
+```{r, warning=FALSE, include=FALSE}
+dat = foreign::read.spss(here::here( "demo_code/data_store/Data file, 24.09.2021.sav" ),
                          to.data.frame=TRUE)
 ```
 
@@ -423,7 +484,7 @@ hist(dat$change[dat$group=="control"], freq=FALSE, add=TRUE, breaks=10, col=NULL
 
 We infer the lower confidence limits for all quantiles of individual treatment effects. The following two figures show the 90% lower confidence limits for all quantiles of individual effects using Stephenson rank statistics with s = 6 and s = 2 (i.e., Wilcoxon rank), respectively
 ```{r, fig.height = 4, fig.width = 6.4, fig.align = "center", cache=TRUE}
-nperm = 10^5
+nperm = 10^6
 ci6 = ci_quantile( Z=as.numeric(dat$group == "intervention"), Y=dat$change, 
                    alternative="greater", method.list=list(name="Stephenson", s=6), 
                    nperm=nperm, alpha=0.10 )
@@ -437,7 +498,7 @@ plot_quantile_CIs(ci2, main="s=2", k_start = n-37)
 ```
 
 ```{r, include=FALSE}
-save.image("Homefood20220921.RData") # save the analysis result
+save.image("Homefood20221028.RData") # save the analysis result
 ```
 
 
