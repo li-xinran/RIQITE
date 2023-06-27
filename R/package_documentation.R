@@ -34,8 +34,9 @@
 #'  The trial had three treatment arms (different approaches to the
 #'  professional development) and a control arm.
 #'
-#' The gain (post score - pre score) for all teachers is the change in the percentage point correct
-#' on the test of electric circuit knowledge (we call this "content knowledge").
+#'  The gain (post score - pre score) for all teachers is the change
+#'  in the percentage point correct on the test of electric circuit
+#'  knowledge (we call this "content knowledge").
 #'
 #'  See Heller, J. I., Daehler, K. R., Wong, N., Shinohara, M., &
 #'  Miratrix, L. W. (2012). Differential effects of three professional
@@ -43,7 +44,8 @@
 #'  elementary science. Journal of Research in Science Teaching,
 #'  49(3), 333–362. doi: 10.1002/tea.21004
 #'
-#'  See report on ERIC at https://files.eric.ed.gov/fulltext/ED514193.pdf
+#'  See report on ERIC at
+#'  https://files.eric.ed.gov/fulltext/ED514193.pdf
 #'
 #'@format A data frame with 233 rows and 7 variables:
 #'  \describe{

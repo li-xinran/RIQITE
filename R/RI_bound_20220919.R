@@ -1,4 +1,7 @@
 
+
+
+
 test_stat <- function(z, y, method.list = list(name = "Wilcoxon")){
   if(method.list$name == "DIM"){
     stat = mean(y[z==1]) - mean(y[z==0])
@@ -96,31 +99,33 @@ pval_max <- function(Z, Y, c, method.list, Z.perm = NULL, iter.max = 10^5, imput
 
 ci_max_effect <- function(Z, Y, method.list, Z.perm = NULL, iter.max = 10^5, impute = "both", alpha = 0.05, tol = 10^(-3) ){
 
-  if( is.null(Z.perm) ){
-    Z.perm = matrix(0, nrow = n, ncol = iter.max)
-    for(iter in 1:iter.max){
-      Z.perm[sample(n, m), iter] = 1
+    if( is.null(Z.perm) ){
+        n = length(Y)
+        m = sum(Z==1)
+        Z.perm = matrix(0, nrow = n, ncol = iter.max)
+        for(iter in 1:iter.max){
+            Z.perm[sample(n, m), iter] = 1
+        }
     }
-  }
 
-  f <- function(c){
-    pval = pval_max(Z = Z, Y = Y, c = c, method.list = method.list, Z.perm = Z.perm, impute = impute)
-    return(pval - alpha)
-  }
+    f <- function(c){
+        pval = pval_max(Z = Z, Y = Y, c = c, method.list = method.list, Z.perm = Z.perm, impute = impute)
+        return(pval - alpha)
+    }
 
-  c_sol <- uniroot(f, interval = c(-max(data$Y) + min(data$Y), max(data$Y) - min(data$Y)), extendInt = "upX", tol = tol)$root
-  c_sol <- round(c_sol, digits = -log10(tol))
-  if(f(c_sol) > 0){
-    while( f(c_sol) > 0 ){
-      c_sol = c_sol - tol
+    c_sol <- uniroot(f, interval = c(-max(Y) + min(Y), max(Y) - min(Y)), extendInt = "upX", tol = tol)$root
+    c_sol <- round(c_sol, digits = -log10(tol))
+    if(f(c_sol) > 0){
+        while( f(c_sol) > 0 ){
+            c_sol = c_sol - tol
+        }
+        c_sol = c_sol + tol
+    }else{
+        while( f(c_sol) <= 0 ){
+            c_sol = c_sol + tol
+        }
     }
-    c_sol = c_sol + tol
-  }else{
-    while( f(c_sol) <= 0 ){
-      c_sol = c_sol + tol
-    }
-  }
-  return(c_sol)
+    return(c_sol)
 }
 
 
@@ -161,7 +166,7 @@ pval_bound <- function(Z, Y, c=0,
     pval = pval_max(Z=Z, Y=Y, c=c, method.list=method.list, Z.perm = Z.perm, iter.max = nperm, impute = impute)
     return(pval)
   } else if(alternative == "less"){
-    pval_max(Z=Z, Y=-1*Y, c=-1*c, method.list=method.list, Z.perm = Z.perm, iter.max = nperm, impute = impute)
+    pval = pval_max(Z=Z, Y=-1*Y, c=-1*c, method.list=method.list, Z.perm = Z.perm, iter.max = nperm, impute = impute)
     return(pval)
   } else {
       stop( glue::glue( "Unrecognized alternative of {alternative}" ) )

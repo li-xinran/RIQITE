@@ -397,12 +397,13 @@ Overall we might adjust our $s$ down a bit to try and optimize multiple goals at
 
 
 
-## Analyzing the data
+## Analyzing the teacher professional development data
 
-With our selected $s$ in hand, we first test the bounded null hypothesis that all individual effects are non-positive. 
+With our selected $s=6$ in hand, we first test the bounded null hypothesis that all individual effects are non-positive. 
 ```{r heller_ptest, cache=TRUE}
 selected_s = 6
 nperm = 10^6
+n_units = nrow( electric_teachers )
 pval.steph <- pval_quantile(Z=electric_teachers$TxAny, Y=electric_teachers$gain, 
                               k=n_units, c=0, alternative = "greater", 
                               method.list=list(name="Stephenson", s=selected_s), nperm=nperm )
@@ -415,11 +416,24 @@ We then conduct inference for all quantiles of individual treatment effects. The
 ```{r heller_quantiles, fig.height = 4, fig.width = 6.4, fig.align = "center"}
 ci6 = ci_quantile( Z=electric_teachers$TxAny, Y=electric_teachers$gain, alternative="greater", 
                   method.list=list( name="Stephenson", s=selected_s ), nperm=nperm, alpha=0.10 )
-ci2 = ci_quantile( Z=electric_teachers$TxAny, Y=electric_teachers$gain, alternative="greater", 
-                  method.list=list( name="Stephenson", s=2 ), nperm=nperm, alpha=0.10 )
+
 ```
 
-We can then visualize the bounds:
+We can summarize our results:
+```{r}
+summary( ci6, c = c(-0.0001, 0, 6), k = c( 140, 141, 145, 146, 164, 165, 233 ) )
+```
+
+Comparing to Wilcoxon:
+
+```{r}
+ci2 = ci_quantile( Z=electric_teachers$TxAny, Y=electric_teachers$gain, alternative="greater", 
+                  method.list=list( name="Stephenson", s=2 ), nperm=nperm, alpha=0.10 )
+summary( ci2, c = c( 0, 6 ) )
+```
+
+
+We can also visualize the bounds:
 
 ```{r}
 par(mfrow = c(1, 2))

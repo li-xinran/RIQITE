@@ -1,4 +1,4 @@
 library(testthat)
-library(perminf)
+library(RIQITE)
 
-test_check("perminf")
+test_check("RIQITE")

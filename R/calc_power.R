@@ -1,4 +1,10 @@
 
+
+# This code supports doing simulation-based power calculations to
+# understand which $s$ values are optimal given specific data contexts.
+
+
+
 #library( tidyverse )
 
 
@@ -302,7 +308,7 @@ calc_power_finite <- function( Y0, tau, p_tx, R = 100,
         stat.null = null_dist(n, floor( n * p_tx ), method.list = method.list, nperm = nperm )
     }
 
-    rps = rerun( R, {
+    rps = map( 1:R, ~ {
         Z = as.numeric( sample(n) <= p_tx * n )
         Yobs = Y0 + ifelse( Z, tau, 0 )
 
@@ -471,7 +477,7 @@ calc_power <- function( n,
     }
 
     n_block = round( R / iter_per_set )
-    rps = rerun( n_block, one_run( iter_per_set ) )
+    rps = map( 1:n_block, ~ one_run( iter_per_set ) )
 
     if ( !summarise ) {
         # Return raw results and stop.
