@@ -98,6 +98,21 @@ null_dist <- function(n, m, method.list = NULL, score = NULL, nperm = 10^5, Z.pe
 
 
 
+#' @title fraction of null draws at least as extreme as the observed statistic
+#'
+#' @description Rank-score statistics are sums of rational scores, and
+#'   floating point addition is not associative: two sums that are
+#'   mathematically tied (summing the same multiset of scores in a
+#'   different order) can differ in their last bit. A strict `>=`
+#'   comparison then drops a null draw that should count as tied,
+#'   undercounting the p-value (see li-xinran/RIQITE#1). This treats
+#'   null draws within a small relative tolerance of `stat.obs` as tied.
+pval_from_null <- function(stat.null, stat.obs){
+    mean( stat.null >= stat.obs - 1e-9 * max(1, abs(stat.obs)) )
+}
+
+
+
 #' @title sort the treated units using the "first" method
 sort_treat <- function(Y, Z){
     r = rank(Y, ties.method = "first")
@@ -156,7 +171,7 @@ pval_H_k_c <- function(Z, Y, k, c,
     stat.min = min_stat(Z, Y, k, c, score = score, ind.sort.treat = ind.sort.treat, method.list = method.list )
 
     # p-value #
-    pval = mean( stat.null >= stat.min )
+    pval = pval_from_null( stat.null, stat.min )
 
     return(pval)
 }
@@ -188,6 +203,12 @@ conf_quant_larger <- function( Z, Y, k.vec = NULL, method.list = NULL, score = N
 
     # find threshold such that p-value <= alpha <===> test stat > threshold #
     thres = sort(stat.null, decreasing = TRUE)[ floor(nperm * alpha) + 1 ]
+
+    # Tolerance for floating point ties between stat.min(c) and thres: both
+    # are sums of the same rank scores added in different orders, so a
+    # mathematical tie can land on either side of a strict comparison (see
+    # li-xinran/RIQITE#1 and pval_from_null() above).
+    e = 1e-9 * max(1, abs(thres))
 
     # range of c #
     Y1.max = max(Y[Z==1])
@@ -222,23 +243,23 @@ conf_quant_larger <- function( Z, Y, k.vec = NULL, method.list = NULL, score = N
                 return(stat.min - thres)
             }
             # check whether f(-Inf) = f(c.min) > 0 #
-            if( f(c.min) <= 0 ){
+            if( f(c.min) <= e ){
                 c.sol = -Inf
             }
-            if( f(c.max) > 0){
+            if( f(c.max) > e){
                 c.sol = c.max
             }
-            if( f(c.min) > 0 & f(c.max) <= 0 ){
+            if( f(c.min) > e & f(c.max) <= e ){
                 c.sol = uniroot(f, interval = c(c.min, c.max), extendInt = "downX", tol = tol)$root
                 # find the min c st p-value > alpha <==> f <= 0 #
                 c.sol = round(c.sol, digits = -log10(tol))
-                if( f(c.sol) <= 0 ){
-                    while( f(c.sol) <= 0 ){
+                if( f(c.sol) <= e ){
+                    while( f(c.sol) <= e ){
                         c.sol = c.sol - tol
                     }
                     c.sol = c.sol + tol
                 }else{
-                    while(f(c.sol) > 0 ){
+                    while(f(c.sol) > e ){
                         c.sol = c.sol + tol
                     }
                 }
@@ -273,23 +294,23 @@ conf_quant_larger <- function( Z, Y, k.vec = NULL, method.list = NULL, score = N
                 return(stat.min - thres)
             }
             # check whether f(-Inf) = f(c.min) > 0 #
-            if( f(c.min) <= 0 ){
+            if( f(c.min) <= e ){
                 c.sol = -Inf
             }
-            if( f(c.max) > 0){
+            if( f(c.max) > e){
                 c.sol = c.max
             }
-            if( f(c.min) > 0 & f(c.max) <= 0 ){
+            if( f(c.min) > e & f(c.max) <= e ){
                 c.sol = uniroot(f, interval = c(c.min, c.max), extendInt = "downX", tol = tol)$root
                 # find the min c st p-value > alpha <==> f <= 0 #
                 c.sol = round(c.sol, digits = -log10(tol))
-                if( f(c.sol) <= 0 ){
-                    while( f(c.sol) <= 0 ){
+                if( f(c.sol) <= e ){
+                    while( f(c.sol) <= e ){
                         c.sol = c.sol - tol
                     }
                     c.sol = c.sol + tol
                 }else{
-                    while(f(c.sol) > 0 ){
+                    while(f(c.sol) > e ){
                         c.sol = c.sol + tol
                     }
                 }

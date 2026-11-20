@@ -3,3 +3,6 @@
 .DS_Store
 Develop20220921.RData
 retired/
+.DS_Store
+tests/testthat/Rplots.pdf
+CLAUDE.md

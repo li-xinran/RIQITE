@@ -46,7 +46,7 @@ pval_imp_both <- function(Z, Y, c, method.list, Z.perm = NULL, iter.max = 10^5){
 
   stat.obs = test_stat(z = Z, y = Y, method.list)
 
-  pval <- mean( stat.perm >= stat.obs )
+  pval <- pval_from_null( stat.perm, stat.obs )
   return(pval)
 }
 
@@ -74,7 +74,7 @@ pval_imp_control <- function(Z, Y, c, method.list, Z.perm = NULL, iter.max = 10^
 
   stat.obs = test_stat(z = Z, y = Y0.imp, method.list)
 
-  pval <- mean( stat.perm >= stat.obs )
+  pval <- pval_from_null( stat.perm, stat.obs )
   return(pval)
 }
 
