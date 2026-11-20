@@ -6,6 +6,13 @@
 \usage{
 pval_from_null(stat.null, stat.obs)
 }
+\arguments{
+\item{stat.null}{Vector of the test statistic under the null
+(e.g. from \code{null_dist()}).}
+
+\item{stat.obs}{The observed (or hypothesized minimum) value of the
+test statistic to compare the null draws against.}
+}
 \description{
 Rank-score statistics are sums of rational scores, and
 floating point addition is not associative: two sums that are

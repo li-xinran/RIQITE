@@ -107,6 +107,11 @@ null_dist <- function(n, m, method.list = NULL, score = NULL, nperm = 10^5, Z.pe
 #'   comparison then drops a null draw that should count as tied,
 #'   undercounting the p-value (see li-xinran/RIQITE#1). This treats
 #'   null draws within a small relative tolerance of `stat.obs` as tied.
+#'
+#' @param stat.null Vector of the test statistic under the null
+#'   (e.g. from `null_dist()`).
+#' @param stat.obs The observed (or hypothesized minimum) value of the
+#'   test statistic to compare the null draws against.
 pval_from_null <- function(stat.null, stat.obs){
     mean( stat.null >= stat.obs - 1e-9 * max(1, abs(stat.obs)) )
 }

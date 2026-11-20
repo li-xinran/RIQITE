@@ -11,17 +11,29 @@ Authors@R: c(
            comment = c(ORCID = "0000-0002-0078-1906")) )
 Description: The package performs hypothesis testing and constructs confidence intervals for quantiles of individual treatment effects.
 License: `use_mit_license()`
+URL: https://github.com/li-xinran/RIQITE, https://li-xinran.github.io/RIQITE/
+BugReports: https://github.com/li-xinran/RIQITE/issues
 Encoding: UTF-8
 LazyData: true
-Imports: 
+Imports:
      dplyr,
      furrr,
      future,
      parallel,
+     purrr,
      tibble,
      tidyverse,
      coin
+Suggests:
+     knitr,
+     rmarkdown,
+     ggplot2,
+     foreign,
+     here,
+     glue,
+     tidyr
+VignetteBuilder: knitr
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
-Depends: 
-    R (>= 2.10)
+Depends:
+    R (>= 3.5)

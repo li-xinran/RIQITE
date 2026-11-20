@@ -1,3 +1,12 @@
 ^RIQITE\.Rproj$
 ^\.Rproj\.user$
 ^data-raw$
+^README\.Rmd$
+^README\.html$
+^doc$
+^Meta$
+^CLAUDE\.md$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^\.github$

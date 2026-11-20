@@ -1,0 +1,12 @@
+url: https://li-xinran.github.io/RIQITE/
+template:
+  bootstrap: 5
+navbar:
+  structure:
+    left:  [intro, illustration, reference, articles, news]
+    right: [search, github]
+  components:
+    illustration:
+      text: Illustration
+      href: articles/RIQITE-illustration.html
+
