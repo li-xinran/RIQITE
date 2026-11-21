@@ -65,15 +65,35 @@
     
     
 <p>This vignette illustrates using the RIQITE package by implementing
-the analyses shown in the main paper (Li and Miratrix). It mirrors
-<code>demo_code/RIllustration20221028.Rmd</code>, adapted to build as a
-package vignette: the illustrative instrumental-variable dataset ships
-with the package as <code>birth_school_age</code> rather than being
-hand-rolled inline, <code><a href="https://rdrr.io/r/base/getwd.html" class="external-link">setwd()</a></code> and <code><a href="https://rdrr.io/r/base/save.html" class="external-link">save.image()</a></code>
-calls have been removed, and a few simulation sizes have been reduced so
-the vignette builds in a reasonable amount of time (the main paper uses
-larger permutation and simulation counts for publication-quality
-precision).</p>
+the analyses shown in the main paper of Caughey, Dafoe, Li, and
+Miratrix. This is the <code>demo_code/RIllustration20221028.Rmd</code>
+script adapted to build as a package vignette. A few tweaks are the
+illustrative instrumental-variable dataset ships with the package as
+<code>birth_school_age</code> rather than being hand-rolled inline, and
+a few simulation sizes have been reduced so the vignette builds in a
+reasonable amount of time (the main paper uses larger permutation and
+simulation counts for publication-quality precision).</p>
+<p>This vignette does two of the three applications from the main paper.
+The main paper also analyzes a homefood nutrition-therapy trial (details
+at <a href="https://clinicaltrials.gov/ct2/show/NCT03995303" class="external-link uri">https://clinicaltrials.gov/ct2/show/NCT03995303</a>, data at
+<a href="https://doi.org/10.7910/DVN/38X3LX" class="external-link uri">https://doi.org/10.7910/DVN/38X3LX</a>) the same way as the
+professional-development data (example 2). That trial’s raw data is
+third-party and not distributed with this package, so it is not
+reproduced in this vignette; see
+<code>demo_code/RIllustration20221028.Rmd</code> in the package source
+repository for the full analysis, which should run for anyone who
+downloads the data from the link above into
+<code>demo_code/data_store/</code>.</p>
+<p>To use RIQITE, first install the package from Github. The github page
+of the package (<a href="https://github.com/li-xinran/RIQITE" class="external-link uri">https://github.com/li-xinran/RIQITE</a>) contains main
+functions with detailed explanation in R documentation, as well as a
+simple illustrating example.</p>
+<p>Install via <code>devtools</code>, and then load:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"li-xinran/RIQITE"</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/li-xinran/RIQITE" class="external-link">RIQITE</a></span><span class="op">)</span></span></code></pre></div>
+<p>Next we provide the code used to analyze the data sets in the
+paper.</p>
 <div class="section level2">
 <h2 id="testing-monotonicity-of-an-instrumental-variable">Testing monotonicity of an instrumental variable<a class="anchor" aria-label="anchor" href="#testing-monotonicity-of-an-instrumental-variable"></a>
 </h2>
@@ -86,7 +106,7 @@ rounded here to 104,000, split evenly between the two birth months
 following Fiorini and Stevens (2014). See <code><a href="../reference/birth_school_age.html">?birth_school_age</a></code>
 for details; this is a reconstruction from published aggregate
 proportions, not a set of real individual records.</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">birth_school_age</span><span class="op">)</span></span>
 <span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="va">birth_school_age</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">dat</span><span class="op">$</span><span class="va">BirthMonth</span>, <span class="va">dat</span><span class="op">$</span><span class="va">EntryTiming</span><span class="op">)</span></span>
@@ -98,7 +118,7 @@ proportions, not a set of real individual records.</p>
 the school-entry age of December-born and January-born subjects. From
 the figure, most children started school at an older age if they were
 born in January rather than December.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">ggplot</span><span class="op">(</span><span class="va">dat</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">EntryAge</span>, color <span class="op">=</span> <span class="va">BirthMonth</span>, linetype <span class="op">=</span> <span class="va">BirthMonth</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">stat_ecdf</span><span class="op">(</span>geom <span class="op">=</span> <span class="st">"step"</span>, show.legend <span class="op">=</span> <span class="cn">FALSE</span>, linewidth <span class="op">=</span> <span class="fl">1.3</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">annotate</span><span class="op">(</span><span class="st">"text"</span>, x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">7.2</span>, <span class="fl">7.2</span><span class="op">)</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">.145</span>, <span class="fl">.81</span><span class="op">)</span>,</span>
@@ -113,7 +133,7 @@ born in January rather than December.</p>
 <p><img src="RIQITE-illustration_files/figure-html/entry_age_ecdf-1.png" class="r-plt" alt="" width="288" style="display: block; margin: auto;"></p>
 <p>We first perform the standard regression analysis assessing the
 relation between the instrument (birthday) and the school-entry age.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">lm.fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">EntryAge</span> <span class="op">~</span> <span class="op">(</span><span class="va">BirthMonth</span> <span class="op">==</span> <span class="st">"Dec"</span><span class="op">)</span>, <span class="va">dat</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span></span>
 <span>  <span class="st">"estimated average effect is"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">lm.fit</span><span class="op">$</span><span class="va">coefficients</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span>,</span>
@@ -132,7 +152,7 @@ statistic with parameter
 along with the classical Student’s
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>t</mi><annotation encoding="application/x-tex">t</annotation></semantics></math>-test,
 producing Table 1 in the paper.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dat</span><span class="op">$</span><span class="va">Z</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">dat</span><span class="op">$</span><span class="va">BirthMonth</span> <span class="op">==</span> <span class="st">"Dec"</span><span class="op">)</span></span>
 <span><span class="va">dat</span><span class="op">$</span><span class="va">Y</span> <span class="op">=</span> <span class="va">dat</span><span class="op">$</span><span class="va">EntryAge</span></span>
 <span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">dat</span><span class="op">$</span><span class="va">Z</span><span class="op">)</span></span>
@@ -203,7 +223,7 @@ producing Table 1 in the paper.</p>
 <p>Finally, we infer the effect range. The range of the effect of birth
 month on school-entry age is at least a year, indicating significant
 individual effect heterogeneity.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tau.max.lower</span> <span class="op">=</span> <span class="fu"><a href="../reference/ci_quantile.html">ci_quantile</a></span><span class="op">(</span>Z <span class="op">=</span> <span class="va">dat</span><span class="op">$</span><span class="va">Z</span>, Y <span class="op">=</span> <span class="va">dat</span><span class="op">$</span><span class="va">Y</span>, k.vec <span class="op">=</span> <span class="va">n</span>, alternative <span class="op">=</span> <span class="st">"greater"</span>,</span>
 <span>                             method.list <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>name <span class="op">=</span> <span class="st">"Stephenson"</span>, s <span class="op">=</span> <span class="fl">10</span><span class="op">)</span>, Z.perm <span class="op">=</span> <span class="va">Z.perm</span>, alpha <span class="op">=</span> <span class="fl">0.05</span><span class="op">)</span><span class="op">$</span><span class="va">lower</span></span>
 <span><span class="va">tau.min.upper</span> <span class="op">=</span> <span class="fu"><a href="../reference/ci_quantile.html">ci_quantile</a></span><span class="op">(</span>Z <span class="op">=</span> <span class="va">dat</span><span class="op">$</span><span class="va">Z</span>, Y <span class="op">=</span> <span class="va">dat</span><span class="op">$</span><span class="va">Y</span>, k.vec <span class="op">=</span> <span class="fl">1</span>, alternative <span class="op">=</span> <span class="st">"less"</span>,</span>
@@ -219,7 +239,7 @@ individual effect heterogeneity.</p>
 teachers were given a professional development course on electric
 circuits, from Heller et al. (2012). The cleaned data ships with the
 package.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">electric_teachers</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">mod</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">gain</span> <span class="op">~</span> <span class="va">TxAny</span>, data <span class="op">=</span> <span class="va">electric_teachers</span><span class="op">)</span></span>
@@ -227,7 +247,7 @@ package.</p>
 <span><span class="va">est_ATE</span></span>
 <span><span class="co">#&gt; TxAny </span></span>
 <span><span class="co">#&gt; 19.77</span></span></code></pre></div>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/hist.html" class="external-link">hist</a></span><span class="op">(</span><span class="va">electric_teachers</span><span class="op">$</span><span class="va">gain</span><span class="op">[</span><span class="va">electric_teachers</span><span class="op">$</span><span class="va">TxAny</span> <span class="op">==</span> <span class="fl">1</span><span class="op">]</span>,</span>
 <span>     xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="va">electric_teachers</span><span class="op">$</span><span class="va">gain</span><span class="op">)</span>, freq <span class="op">=</span> <span class="cn">FALSE</span>, ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.065</span><span class="op">)</span>,</span>
 <span>     col <span class="op">=</span> <span class="st">"grey"</span>, border <span class="op">=</span> <span class="cn">FALSE</span>, breaks <span class="op">=</span> <span class="fl">20</span>,</span>
@@ -238,7 +258,7 @@ package.</p>
 <p>We standardize gain by the control-side variation in outcome at
 baseline, to compare treatment and control variation in effect size
 units:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sd_0</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">electric_teachers</span><span class="op">$</span><span class="va">Per.1</span><span class="op">[</span><span class="va">electric_teachers</span><span class="op">$</span><span class="va">TxAny</span> <span class="op">==</span> <span class="fl">0</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="va">electric_teachers</span><span class="op">$</span><span class="va">std_gain</span> <span class="op">=</span> <span class="va">electric_teachers</span><span class="op">$</span><span class="va">gain</span> <span class="op">/</span> <span class="va">sd_0</span></span>
 <span><span class="va">electric_teachers</span> <span class="op">%&gt;%</span> <span class="fu">group_by</span><span class="op">(</span><span class="va">TxAny</span><span class="op">)</span> <span class="op">%&gt;%</span></span>
@@ -264,7 +284,7 @@ around
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>0.28</mn><mi>σ</mi></mrow><annotation encoding="application/x-tex">0.28\sigma</annotation></semantics></math>
 in effect size units (the group standard deviations above are
 approximately 0.852 and 0.806):</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tx_het</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fl">0.852</span><span class="op">^</span><span class="fl">2</span> <span class="op">-</span> <span class="fl">0.806</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span></span>
 <span><span class="va">tx_het</span></span>
 <span><span class="co">#&gt; [1] 0.2761666</span></span></code></pre></div>
@@ -284,14 +304,11 @@ quantiles, and the next 40 quantiles.</p>
 is for a single scenario, using the empirical distribution of control
 outcomes and a normally-distributed, uncorrelated treatment effect (in
 standardized units).</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">303020</span><span class="op">)</span></span>
 <span><span class="va">cdat</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">electric_teachers</span>, <span class="va">TxAny</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span></span>
 <span><span class="va">ate</span> <span class="op">=</span> <span class="va">est_ATE</span> <span class="op">/</span> <span class="va">sd_0</span></span>
-<span><span class="co"># NOTE: the main paper uses R = 1000 replicates; reduced here to keep the</span></span>
-<span><span class="co"># vignette build time reasonable. Increase R for publication-quality</span></span>
-<span><span class="co"># precision.</span></span>
-<span><span class="va">R</span> <span class="op">=</span> <span class="fl">50</span></span>
+<span><span class="va">R</span> <span class="op">=</span> <span class="fl">100</span> <span class="co"># The main paper uses a larger R</span></span>
 <span><span class="va">nperm</span> <span class="op">=</span> <span class="fl">10</span><span class="op">^</span><span class="fl">3</span></span>
 <span><span class="va">s_list</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">4</span>, <span class="fl">5</span>, <span class="fl">6</span>, <span class="fl">8</span>, <span class="fl">10</span>, <span class="fl">15</span>, <span class="fl">20</span><span class="op">)</span></span>
 <span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/explore_stephenson_s.html">explore_stephenson_s</a></span><span class="op">(</span>s <span class="op">=</span> <span class="va">s_list</span>,</span>
@@ -306,21 +323,21 @@ standardized units).</p>
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>s</mi><annotation encoding="application/x-tex">s</annotation></semantics></math>,
 telling us how easy it was to detect effects at that quantile. Here is
 our performance on the 170th largest effect (of 233 effects):</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">res</span>, <span class="va">k</span> <span class="op">==</span> <span class="fl">170</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 9 × 6</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># Groups:   s [9]</span></span></span>
 <span><span class="co">#&gt;       s     k power SEpower      q_ci     n</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     2   170  0     0      -<span style="color: #BB0000;">Inf</span>       39.8</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>     3   170  0     0        -<span style="color: #BB0000;">1.27</span>    50.3</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>     4   170  0.02  0.02     -<span style="color: #BB0000;">0.393</span>   56.5</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span>     5   170  0.14  0.074<span style="text-decoration: underline;">8</span>   -<span style="color: #BB0000;">0.186</span>   59.0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span>     6   170  0.42  0.091<span style="text-decoration: underline;">7</span>   -<span style="color: #BB0000;">0.066</span><span style="color: #BB0000; text-decoration: underline;">9</span>  61.2</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span>     8   170  0.3   0.110    -<span style="color: #BB0000;">0.074</span><span style="color: #BB0000; text-decoration: underline;">1</span>  61.0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">7</span>    10   170  0.3   0.070<span style="text-decoration: underline;">7</span>   -<span style="color: #BB0000;">0.152</span>   59.1</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">8</span>    15   170  0.16  0.081<span style="text-decoration: underline;">2</span>   -<span style="color: #BB0000;">0.316</span>   49.9</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">9</span>    20   170  0.02  0.02     -<span style="color: #BB0000;">0.426</span>   42.5</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     2   170  0     0      -<span style="color: #BB0000;">Inf</span>       40.4</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>     3   170  0     0        -<span style="color: #BB0000;">1.23</span>    51.0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>     4   170  0.02  0.013<span style="text-decoration: underline;">3</span>   -<span style="color: #BB0000;">0.357</span>   56.9</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span>     5   170  0.19  0.060<span style="text-decoration: underline;">5</span>   -<span style="color: #BB0000;">0.158</span>   59.6</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span>     6   170  0.48  0.090<span style="text-decoration: underline;">4</span>   -<span style="color: #BB0000;">0.035</span><span style="color: #BB0000; text-decoration: underline;">0</span>  62.2</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span>     8   170  0.46  0.101    -<span style="color: #BB0000;">0.021</span><span style="color: #BB0000; text-decoration: underline;">9</span>  62.7</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">7</span>    10   170  0.43  0.098<span style="text-decoration: underline;">9</span>   -<span style="color: #BB0000;">0.096</span><span style="color: #BB0000; text-decoration: underline;">1</span>  60.7</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">8</span>    15   170  0.17  0.051<span style="text-decoration: underline;">7</span>   -<span style="color: #BB0000;">0.246</span>   53.2</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">9</span>    20   170  0.07  0.039<span style="text-decoration: underline;">6</span>   -<span style="color: #BB0000;">0.418</span>   43.0</span></span></code></pre></div>
 <p>We next make a grid of different scenarios to explore to see if our
 trends of best
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>s</mi><annotation encoding="application/x-tex">s</annotation></semantics></math>
@@ -330,7 +347,7 @@ alongside this vignette (<code>heller_s_check_results.rds</code>) so the
 vignette does not need to re-run the full multi-scenario simulation
 (which is considerably more expensive than the single-scenario check
 above) every time it is built.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">checks</span> <span class="op">=</span> <span class="fu">expand_grid</span><span class="op">(</span>TxVar <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.25</span>, <span class="fl">0.75</span><span class="op">)</span>,</span>
 <span>                      tx_dist <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"rexp"</span>, <span class="st">"rnorm"</span><span class="op">)</span>,</span>
 <span>                      rho <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">0.5</span>, <span class="fl">0</span>, <span class="fl">0.5</span><span class="op">)</span><span class="op">)</span></span>
@@ -346,7 +363,7 @@ take the median of the median lower confidence bound. High points on the
 curve below indicate those
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>s</mi><annotation encoding="application/x-tex">s</annotation></semantics></math>
 that are more informative:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">n_units</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">electric_teachers</span><span class="op">)</span></span>
 <span><span class="va">s_selector</span> <span class="op">=</span> <span class="fu">mutate</span><span class="op">(</span><span class="va">s_selector</span>,</span>
 <span>                     group <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/cut.html" class="external-link">cut</a></span><span class="op">(</span><span class="va">k</span>,</span>
@@ -380,11 +397,11 @@ that are more informative:</p>
 <span>  <span class="fu">coord_cartesian</span><span class="op">(</span>ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1.5</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">theme</span><span class="op">(</span>legend.key.width <span class="op">=</span> <span class="fu">unit</span><span class="op">(</span><span class="fl">1</span>, <span class="st">"cm"</span><span class="op">)</span>,</span>
 <span>        panel.border <span class="op">=</span> <span class="fu">element_rect</span><span class="op">(</span>colour <span class="op">=</span> <span class="st">"grey"</span>, fill <span class="op">=</span> <span class="cn">NA</span>, linewidth <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="RIQITE-illustration_files/figure-html/plot_s_selector-1.png" class="r-plt" alt="" width="700"></p>
+<p><img src="RIQITE-illustration_files/figure-html/plot_s_selector-1.png" class="r-plt" alt="" width="100%"></p>
 <p>We can also tally up the winning
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>s</mi><annotation encoding="application/x-tex">s</annotation></semantics></math>
 across each of the 100 quantiles we are exploring:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">qis</span> <span class="op">&lt;-</span> <span class="va">s_selector</span> <span class="op">%&gt;%</span></span>
 <span>  <span class="fu">group_by</span><span class="op">(</span><span class="va">TxVar</span>, <span class="va">tx_dist</span>, <span class="va">rho</span>, <span class="va">group</span>, <span class="va">k</span><span class="op">)</span> <span class="op">%&gt;%</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">q_ci</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">q_ci</span><span class="op">)</span><span class="op">)</span></span>
@@ -433,7 +450,7 @@ to try and optimize multiple goals at once, using, e.g.,
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>s</mi><mo>=</mo><mn>6</mn></mrow><annotation encoding="application/x-tex">s = 6</annotation></semantics></math>
 in hand, we first test the bounded null hypothesis that all individual
 effects are non-positive.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">selected_s</span> <span class="op">=</span> <span class="fl">6</span></span>
 <span><span class="va">nperm</span> <span class="op">=</span> <span class="fl">10</span><span class="op">^</span><span class="fl">6</span></span>
 <span><span class="va">n_units</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">electric_teachers</span><span class="op">)</span></span>
@@ -448,7 +465,7 @@ effects, using Stephenson rank statistics with
 6 and
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>s</mi><mo>=</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">s = 2</annotation></semantics></math>
 (i.e., Wilcoxon rank).</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ci6</span> <span class="op">=</span> <span class="fu"><a href="../reference/ci_quantile.html">ci_quantile</a></span><span class="op">(</span>Z <span class="op">=</span> <span class="va">electric_teachers</span><span class="op">$</span><span class="va">TxAny</span>, Y <span class="op">=</span> <span class="va">electric_teachers</span><span class="op">$</span><span class="va">gain</span>, alternative <span class="op">=</span> <span class="st">"greater"</span>,</span>
 <span>                   method.list <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>name <span class="op">=</span> <span class="st">"Stephenson"</span>, s <span class="op">=</span> <span class="va">selected_s</span><span class="op">)</span>, nperm <span class="op">=</span> <span class="va">nperm</span>, alpha <span class="op">=</span> <span class="fl">0.10</span><span class="op">)</span></span>
 <span><span class="va">ci6</span></span>
@@ -457,7 +474,7 @@ effects, using Stephenson rank statistics with
 <span><span class="co">#&gt; Alternative: greater with alpha=0.1</span></span>
 <span><span class="co">#&gt; Quantiles covered from 1 to 233 (233 quantiles)</span></span>
 <span><span class="co">#&gt; 1e+06 permutations with tolerance of 0.001</span></span></code></pre></div>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">ci6</span>, c <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">0.0001</span>, <span class="fl">0</span>, <span class="fl">6</span><span class="op">)</span>, k <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">140</span>, <span class="fl">141</span>, <span class="fl">145</span>, <span class="fl">146</span>, <span class="fl">164</span>, <span class="fl">165</span>, <span class="fl">233</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; CI quantile on 233 units with 164 treated:</span></span>
 <span><span class="co">#&gt; Method: Stephenson-6</span></span>
@@ -489,7 +506,7 @@ effects, using Stephenson rank statistics with
 <span><span class="co">#&gt;  165    6.660     Inf</span></span>
 <span><span class="co">#&gt;  233   16.671     Inf</span></span></code></pre></div>
 <p>Comparing to Wilcoxon:</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ci2</span> <span class="op">=</span> <span class="fu"><a href="../reference/ci_quantile.html">ci_quantile</a></span><span class="op">(</span>Z <span class="op">=</span> <span class="va">electric_teachers</span><span class="op">$</span><span class="va">TxAny</span>, Y <span class="op">=</span> <span class="va">electric_teachers</span><span class="op">$</span><span class="va">gain</span>, alternative <span class="op">=</span> <span class="st">"greater"</span>,</span>
 <span>                   method.list <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>name <span class="op">=</span> <span class="st">"Stephenson"</span>, s <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>, nperm <span class="op">=</span> <span class="va">nperm</span>, alpha <span class="op">=</span> <span class="fl">0.10</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">ci2</span>, c <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">6</span><span class="op">)</span><span class="op">)</span></span>
@@ -508,7 +525,7 @@ effects, using Stephenson rank statistics with
 <span><span class="co">#&gt; 48 or more units (21%) with effects larger than 6</span></span>
 <span><span class="co">#&gt; ..quantile 186 and above have lower CI bounds &gt; 6</span></span></code></pre></div>
 <p>We can also visualize the bounds:</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">s_title</span> <span class="op">=</span> <span class="fu">glue</span><span class="fu">::</span><span class="fu"><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue</a></span><span class="op">(</span><span class="st">"s={selected_s}"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/plot_quantile_CIs.html">plot_quantile_CIs</a></span><span class="op">(</span><span class="va">ci6</span>, k_start <span class="op">=</span> <span class="fl">102</span>, main <span class="op">=</span> <span class="va">s_title</span><span class="op">)</span></span>
@@ -516,7 +533,7 @@ effects, using Stephenson rank statistics with
 <p><img src="RIQITE-illustration_files/figure-html/heller_ci_plots-1.png" class="r-plt" alt="" width="614.4" style="display: block; margin: auto;"></p>
 <p>Finally, we infer the effect range by conducting two tests, one for
 greater and one for less.</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tau.max.lower</span> <span class="op">=</span> <span class="fu"><a href="../reference/ci_quantile.html">ci_quantile</a></span><span class="op">(</span>Z <span class="op">=</span> <span class="va">electric_teachers</span><span class="op">$</span><span class="va">TxAny</span>, Y <span class="op">=</span> <span class="va">electric_teachers</span><span class="op">$</span><span class="va">gain</span>, k.vec <span class="op">=</span> <span class="va">n_units</span>,</span>
 <span>                             alternative <span class="op">=</span> <span class="st">"greater"</span>, method.list <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>name <span class="op">=</span> <span class="st">"Stephenson"</span>, s <span class="op">=</span> <span class="va">selected_s</span><span class="op">)</span>,</span>
 <span>                             nperm <span class="op">=</span> <span class="va">nperm</span>, alpha <span class="op">=</span> <span class="fl">0.05</span><span class="op">)</span><span class="op">$</span><span class="va">lower</span></span>
@@ -528,20 +545,6 @@ greater and one for less.</p>
 <p>In this case, we have no evidence of effect heterogeneity (all the
 effects could be the same).</p>
 </div>
-</div>
-<div class="section level2">
-<h2 id="evaluating-the-effects-of-six-month-nutrition-therapy">Evaluating the effects of six-month nutrition therapy<a class="anchor" aria-label="anchor" href="#evaluating-the-effects-of-six-month-nutrition-therapy"></a>
-</h2>
-<p>The main paper also analyzes a homefood nutrition-therapy trial
-(details at <a href="https://clinicaltrials.gov/ct2/show/NCT03995303" class="external-link uri">https://clinicaltrials.gov/ct2/show/NCT03995303</a>, data at
-<a href="https://doi.org/10.7910/DVN/38X3LX" class="external-link uri">https://doi.org/10.7910/DVN/38X3LX</a>) the same way as the
-professional-development data above. That trial’s raw data is
-third-party and not distributed with this package, so it is not
-reproduced in this vignette; see
-<code>demo_code/RIllustration20221028.Rmd</code> in the package source
-repository for the full analysis, which runs for anyone who downloads
-the data from the link above into
-<code>demo_code/data_store/</code>.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

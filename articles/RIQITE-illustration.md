@@ -1,15 +1,40 @@
 # Data analysis and power analysis using RIQITE
 
 This vignette illustrates using the RIQITE package by implementing the
-analyses shown in the main paper (Li and Miratrix). It mirrors
-`demo_code/RIllustration20221028.Rmd`, adapted to build as a package
-vignette: the illustrative instrumental-variable dataset ships with the
-package as `birth_school_age` rather than being hand-rolled inline,
-[`setwd()`](https://rdrr.io/r/base/getwd.html) and
-[`save.image()`](https://rdrr.io/r/base/save.html) calls have been
-removed, and a few simulation sizes have been reduced so the vignette
-builds in a reasonable amount of time (the main paper uses larger
-permutation and simulation counts for publication-quality precision).
+analyses shown in the main paper of Caughey, Dafoe, Li, and Miratrix.
+This is the `demo_code/RIllustration20221028.Rmd` script adapted to
+build as a package vignette. A few tweaks are the illustrative
+instrumental-variable dataset ships with the package as
+`birth_school_age` rather than being hand-rolled inline, and a few
+simulation sizes have been reduced so the vignette builds in a
+reasonable amount of time (the main paper uses larger permutation and
+simulation counts for publication-quality precision).
+
+This vignette does two of the three applications from the main paper.
+The main paper also analyzes a homefood nutrition-therapy trial (details
+at <https://clinicaltrials.gov/ct2/show/NCT03995303>, data at
+<https://doi.org/10.7910/DVN/38X3LX>) the same way as the
+professional-development data (example 2). That trial’s raw data is
+third-party and not distributed with this package, so it is not
+reproduced in this vignette; see `demo_code/RIllustration20221028.Rmd`
+in the package source repository for the full analysis, which should run
+for anyone who downloads the data from the link above into
+`demo_code/data_store/`.
+
+To use RIQITE, first install the package from Github. The github page of
+the package (<https://github.com/li-xinran/RIQITE>) contains main
+functions with detailed explanation in R documentation, as well as a
+simple illustrating example.
+
+Install via `devtools`, and then load:
+
+``` r
+
+devtools::install_github("li-xinran/RIQITE")
+library(RIQITE)
+```
+
+Next we provide the code used to analyze the data sets in the paper.
 
 ## Testing monotonicity of an instrumental variable
 
@@ -226,10 +251,7 @@ standardized units).
 set.seed(303020)
 cdat = filter(electric_teachers, TxAny == 0)
 ate = est_ATE / sd_0
-# NOTE: the main paper uses R = 1000 replicates; reduced here to keep the
-# vignette build time reasonable. Increase R for publication-quality
-# precision.
-R = 50
+R = 100 # The main paper uses a larger R
 nperm = 10^3
 s_list = c(2, 3, 4, 5, 6, 8, 10, 15, 20)
 res <- explore_stephenson_s(s = s_list,
@@ -253,15 +275,15 @@ filter(res, k == 170)
 #> # Groups:   s [9]
 #>       s     k power SEpower      q_ci     n
 #>   <dbl> <dbl> <dbl>   <dbl>     <dbl> <dbl>
-#> 1     2   170  0     0      -Inf       39.8
-#> 2     3   170  0     0        -1.27    50.3
-#> 3     4   170  0.02  0.02     -0.393   56.5
-#> 4     5   170  0.14  0.0748   -0.186   59.0
-#> 5     6   170  0.42  0.0917   -0.0669  61.2
-#> 6     8   170  0.3   0.110    -0.0741  61.0
-#> 7    10   170  0.3   0.0707   -0.152   59.1
-#> 8    15   170  0.16  0.0812   -0.316   49.9
-#> 9    20   170  0.02  0.02     -0.426   42.5
+#> 1     2   170  0     0      -Inf       40.4
+#> 2     3   170  0     0        -1.23    51.0
+#> 3     4   170  0.02  0.0133   -0.357   56.9
+#> 4     5   170  0.19  0.0605   -0.158   59.6
+#> 5     6   170  0.48  0.0904   -0.0350  62.2
+#> 6     8   170  0.46  0.101    -0.0219  62.7
+#> 7    10   170  0.43  0.0989   -0.0961  60.7
+#> 8    15   170  0.17  0.0517   -0.246   53.2
+#> 9    20   170  0.07  0.0396   -0.418   43.0
 ```
 
 We next make a grid of different scenarios to explore to see if our
@@ -489,15 +511,3 @@ max(0, tau.max.lower - tau.min.upper)
 
 In this case, we have no evidence of effect heterogeneity (all the
 effects could be the same).
-
-## Evaluating the effects of six-month nutrition therapy
-
-The main paper also analyzes a homefood nutrition-therapy trial (details
-at <https://clinicaltrials.gov/ct2/show/NCT03995303>, data at
-<https://doi.org/10.7910/DVN/38X3LX>) the same way as the
-professional-development data above. That trial’s raw data is
-third-party and not distributed with this package, so it is not
-reproduced in this vignette; see `demo_code/RIllustration20221028.Rmd`
-in the package source repository for the full analysis, which runs for
-anyone who downloads the data from the link above into
-`demo_code/data_store/`.
